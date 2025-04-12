@@ -40,21 +40,86 @@ class FirstScreen extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              IconButton(
-                onPressed: () async {
-                  await GetStorage().erase();
-                  Get.offAllNamed('/login_screen');
-                },
-                icon: Icon(
-                  Icons.logout_outlined,
-                  color: ConstColors.black,
-                  size: 25.sp,
-                ),
-              ),
             ],
           ),
           backgroundColor: ConstColors.white,
           surfaceTintColor: ConstColors.backgroundColor,
+        ),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: ConstColors.green,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    organizationName,
+                    style: GoogleFonts.poppins(
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    "Parking Management System",
+                    style: GoogleFonts.poppins(
+                      fontSize: 14.sp,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isAdmin)
+              ListTile(
+                leading: Icon(
+                  Icons.admin_panel_settings,
+                  color: ConstColors.green,
+                ),
+                title: Text(
+                  "Admin Dashboard",
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                onTap: () {
+                  Get.back(); // Close drawer
+                  if (GetStorage().read('adminAccess') == true) {
+                    Get.toNamed("/admin_dashboard");
+                  } else {
+                    _showAdminCodeDialog(context);
+                  }
+                },
+              ),
+            const Divider(),
+            ListTile(
+              leading: Icon(
+                Icons.logout,
+                color: Colors.red,
+              ),
+              title: Text(
+                "Logout",
+                style: GoogleFonts.poppins(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.red,
+                ),
+              ),
+              onTap: () async {
+                Get.back(); // Close drawer
+                await GetStorage().erase();
+                Get.offAllNamed('/login_screen');
+              },
+            ),
+          ],
         ),
       ),
       backgroundColor: ConstColors.backgroundColor,
@@ -64,43 +129,6 @@ class FirstScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(height: 20.h),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (isAdmin)
-                    SizedBox(
-                      height: 36.h,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          _showAdminCodeDialog(context);
-                        },
-                        icon: Icon(
-                          Icons.admin_panel_settings,
-                          color: Colors.white,
-                          size: 16.sp,
-                        ),
-                        label: Text(
-                          "Admin",
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: ConstColors.green,
-                          foregroundColor: Colors.white,
-                          elevation: 3,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 8.w,
-                            vertical: 4.h,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
               SizedBox(height: 20.h),
               Text(
                 "Welcome to ${organizationName}",

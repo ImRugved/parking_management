@@ -8,6 +8,20 @@ class AdminDashboardController extends GetxController {
   String get organization => storage.read('organization') ?? 'Parking System';
   String get email => storage.read('username') ?? 'admin@example.com';
 
+  @override
+  void onInit() {
+    super.onInit();
+    // Redirect if no admin access
+    if (!checkAdminAccess()) {
+      Get.offAllNamed('/first_screen');
+    }
+  }
+
+  @override
+  void onClose() {
+    super.onClose();
+  }
+
   // Check if the user has admin access
   bool checkAdminAccess() {
     return storage.read('adminAccess') == true;
@@ -23,14 +37,5 @@ class AdminDashboardController extends GetxController {
   void fullLogout() {
     storage.erase();
     Get.offAllNamed('/login_screen');
-  }
-
-  @override
-  void onInit() {
-    super.onInit();
-    // Redirect if no admin access
-    if (!checkAdminAccess()) {
-      Get.offAllNamed('/first_screen');
-    }
   }
 }

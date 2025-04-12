@@ -44,13 +44,13 @@ class Routes {
     //bike page screen
     GetPage(
         name: '/bike_screen',
-        page: () => const BikeScreenPage(),
+        page: () => BikeScreenPage(),
         binding: HomeBinding()),
 
     //car page screen
     GetPage(
         name: '/car_screen',
-        page: () => const CarScreenPage(),
+        page: () => CarScreenPage(),
         binding: HomeBinding()),
 
     //Login page Screen

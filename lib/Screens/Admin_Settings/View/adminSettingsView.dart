@@ -3,6 +3,7 @@ import 'package:aditya_birla/Constant/custom_textstyle.dart';
 import 'package:aditya_birla/Constant/loading.dart';
 import 'package:aditya_birla/Constant/rounded_button.dart';
 import 'package:aditya_birla/Screens/Admin_Settings/Controller/adminSettingsController.dart';
+import 'package:aditya_birla/Screens/Admin_Settings/Controller/location_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -15,6 +16,8 @@ class AdminSettingsView extends GetView<AdminSettingsController> {
 
   @override
   Widget build(BuildContext context) {
+    final locationController = Get.find<LocationController>();
+
     return Scaffold(
       backgroundColor: ConstColors.backgroundColor,
       appBar: PreferredSize(
@@ -31,7 +34,7 @@ class AdminSettingsView extends GetView<AdminSettingsController> {
             ),
           ),
           title: Text(
-            "Parking Rate Settings",
+            "Parking Settings",
             style: getTextTheme().headlineLarge,
             overflow: TextOverflow.ellipsis,
           ),
@@ -50,6 +53,206 @@ class AdminSettingsView extends GetView<AdminSettingsController> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Location Management Section
+                        Text(
+                          "Location Management",
+                          style: GoogleFonts.poppins(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.bold,
+                            color: ConstColors.black,
+                          ),
+                        ),
+                        Gap(10.h),
+                        Text(
+                          "Add and manage parking locations",
+                          style: GoogleFonts.poppins(
+                            fontSize: 14.sp,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        Gap(20.h),
+
+                        // Add Location Form
+                        Container(
+                          padding: EdgeInsets.all(15.w),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 5,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Add New Location",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Gap(15.h),
+                              TextField(
+                                controller:
+                                    locationController.locationNameController,
+                                decoration: InputDecoration(
+                                  labelText: "Location Name",
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 15.w,
+                                    vertical: 12.h,
+                                  ),
+                                ),
+                              ),
+                              Gap(15.h),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    if (locationController
+                                        .locationNameController
+                                        .text
+                                        .isNotEmpty) {
+                                      locationController.addLocation(
+                                          locationController
+                                              .locationNameController.text);
+                                    } else {
+                                      Get.snackbar(
+                                        "Error",
+                                        "Please enter a location name",
+                                        backgroundColor: Colors.red,
+                                        colorText: Colors.white,
+                                      );
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: ConstColors.green,
+                                    foregroundColor: Colors.white,
+                                    padding:
+                                        EdgeInsets.symmetric(vertical: 12.h),
+                                  ),
+                                  child: Text("Add Location"),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Gap(30.h),
+
+                        // Existing Locations List
+                        Text(
+                          "Existing Locations",
+                          style: GoogleFonts.poppins(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Gap(15.h),
+                        Obx(() => locationController.locations.isEmpty
+                            ? Center(
+                                child: Text(
+                                  "No locations added yet",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14.sp,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              )
+                            : ListView.builder(
+                                shrinkWrap: true,
+                                physics: NeverScrollableScrollPhysics(),
+                                itemCount: locationController.locations.length,
+                                itemBuilder: (context, index) {
+                                  final location =
+                                      locationController.locations[index];
+                                  return Container(
+                                    margin: EdgeInsets.only(bottom: 10.h),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(10),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 5,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ListTile(
+                                      title: Text(
+                                        location.name,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      trailing: IconButton(
+                                        icon: Icon(
+                                          Icons.delete,
+                                          color: Colors.red,
+                                          size: 20.sp,
+                                        ),
+                                        onPressed: () {
+                                          Get.dialog(
+                                            AlertDialog(
+                                              title: Text("Delete Location"),
+                                              content: Text(
+                                                  "Are you sure you want to delete this location?"),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Get.back(),
+                                                  child: Text("Cancel"),
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: () {
+                                                    Get.back();
+                                                    locationController
+                                                        .deleteLocation(
+                                                            location.id);
+                                                  },
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    backgroundColor: Colors.red,
+                                                    foregroundColor:
+                                                        Colors.white,
+                                                  ),
+                                                  child: Text("Delete"),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                },
+                              )),
+                        Gap(40.h),
+
+                        // Parking Rates Section
+                        Text(
+                          "Parking Rate Settings",
+                          style: GoogleFonts.poppins(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.bold,
+                            color: ConstColors.black,
+                          ),
+                        ),
+                        Gap(10.h),
+                        Text(
+                          "Configure parking rates for different vehicle types",
+                          style: GoogleFonts.poppins(
+                            fontSize: 14.sp,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        Gap(20.h),
+
                         // First Hours Bracket Selector
                         Text(
                           "First Hours Bracket",

@@ -1,13 +1,21 @@
 import 'dart:async';
 import 'dart:developer';
 import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:aditya_birla/Constant/global.dart';
 import 'package:aditya_birla/Screens/HomeScreen/model/getOfficeName.dart';
-import 'package:aditya_birla/Screens/HomeScreen/model/getVehicleRateModel.dart';
+import 'package:aditya_birla/Screens/HomeScreen/model/getVehicleRateModel.dart'
+    as old_model;
+import 'package:aditya_birla/Models/vehicle_rate_model.dart';
+import 'package:aditya_birla/Models/location_model.dart';
+import 'package:aditya_birla/Models/company_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -16,22 +24,49 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'dart:typed_data';
-import 'package:flutter/services.dart';
 import 'package:convert/convert.dart';
+import 'package:image/image.dart' as img;
+import 'package:path_provider/path_provider.dart';
 
 class HomeController extends GetxController {
+  final formKey = GlobalKey<FormState>();
+  final vehicleNo = TextEditingController();
+  final selectedVehicle = 1.obs;
+  final selectedLocation = ''.obs;
+  final selectedCompany = ''.obs;
+  final isLoading = false.obs;
+  final locations = <ParkingLocation>[].obs;
+  final companies = <Company>[].obs;
+  final vehicleRates = <GetVehicleRate>[].obs;
+
   @override
   void onInit() {
     super.onInit();
+
+    // First, fetch locations from Firebase
+    fetchLocations();
+
+    // Then set up other data and UI elements
     getVehicleRate();
     updateDateTime();
     getLocationList();
     locationType = null;
-    selectedLocation = 'Aditya Birla Office'.obs;
+
+    // Only set a default location if no locations were loaded
+    if (locations.isEmpty) {
+      selectedLocation.value = '';
+    } else if (locations.isNotEmpty) {
+      // Set the first available location as default
+      selectedLocation.value = locations.first.id;
+    }
+
+    // Set up the timer for updating date/time
     timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       updateDateTime();
     });
+
+    // Fetch companies data
+    fetchCompanies();
   }
 
   @override
@@ -52,16 +87,11 @@ class HomeController extends GetxController {
   RxString currentTime = ''.obs;
   RxString qrcodeNumber = ''.obs;
   RxBool isPdfLoading = false.obs;
-  RxBool isLoading = false.obs;
   RxBool isOfficeLoading = false.obs;
-  RxInt selectedVehicle = 0.obs;
-  RxString selectedLocation = 'Aditya Birla Office'.obs;
-  TextEditingController vehicleNo = TextEditingController();
   TextEditingController customLocationController = TextEditingController();
   String? locationType;
   RxBool isOtherLocationSelected = false.obs;
   RxList<GetOfficeModel> locationTypeList = <GetOfficeModel>[].obs;
-  RxList<GetVehicleRate> vehicleRates = <GetVehicleRate>[].obs;
   Timer? timer;
 
   void updateDateTime() {
@@ -115,55 +145,40 @@ class HomeController extends GetxController {
   }
 
   Future<void> _createDefaultRates() async {
+    // Get the organization ID
+    final storage = GetStorage();
+    final organizationId = storage.read('organization') ?? '';
+
     // Create two-wheeler rates
     await _firestore.collection('vehicle_rates').add({
+      'id': DateTime.now().millisecondsSinceEpoch.toString(),
       'vehicleTypeId': '2 Wheeler',
+      'organizationId': organizationId,
       'hoursRate': '20',
       'everyHoursRate': '10',
       'hours24Rate': '200',
       'amountFor2': '20',
       'amountAfter2': '10',
+      'createdAt': DateTime.now().toIso8601String(),
     });
 
     // Create four-wheeler rates
     await _firestore.collection('vehicle_rates').add({
+      'id': DateTime.now().millisecondsSinceEpoch.toString(),
       'vehicleTypeId': '4 Wheeler',
+      'organizationId': organizationId,
       'hoursRate': '40',
       'everyHoursRate': '20',
       'hours24Rate': '400',
       'amountFor2': '40',
       'amountAfter2': '20',
+      'createdAt': DateTime.now().toIso8601String(),
     });
   }
 
   Future<void> getLocationList() async {
     try {
       isOfficeLoading.value = true;
-
-      // Check if locations exist
-      final locationsCollection =
-          await _firestore.collection('locations').get();
-
-      if (locationsCollection.docs.isEmpty) {
-        // Create default locations if none exist
-        await _firestore.collection('locations').add({
-          'name': 'Location 1',
-          'address': 'Aditya Birla Campus Main Gate',
-          'id': '1',
-        });
-
-        await _firestore.collection('locations').add({
-          'name': 'Location 2',
-          'address': 'Aditya Birla Campus East Wing',
-          'id': '2',
-        });
-
-        await _firestore.collection('locations').add({
-          'name': 'Location 3',
-          'address': 'Aditya Birla Campus West Wing',
-          'id': '3',
-        });
-      }
 
       // Fetch locations from Firestore
       final locations = await _firestore.collection('locations').get();
@@ -238,9 +253,7 @@ class HomeController extends GetxController {
 
       final entryTime = DateTime.now();
       final tokenNo = UniqueKey().hashCode.toString().substring(0, 4);
-      String locationToStore = selectedLocation.value.isNotEmpty
-          ? selectedLocation.value
-          : 'Aditya Birla Office';
+      String locationToStore = selectedLocation.value;
 
       // Generate QR code data as a string
       final qrData = "${vehicleNo.text.toUpperCase()}_$tokenNo";
@@ -252,9 +265,38 @@ class HomeController extends GetxController {
       // Set the rates from Firestore
       final vehicleTypeId =
           selectedVehicle.value == 2 ? '2 Wheeler' : '4 Wheeler';
-      final vehicleRate = vehicleRates.firstWhere(
-          (rate) => rate.vehicleTypeId == vehicleTypeId,
-          orElse: () => vehicleRates.first);
+
+      // Safely retrieve the vehicle rate
+      GetVehicleRate? vehicleRate;
+      try {
+        vehicleRate = vehicleRates.firstWhere(
+            (rate) => rate.vehicleTypeId == vehicleTypeId,
+            orElse: () => vehicleRates.isNotEmpty
+                ? vehicleRates.first
+                : GetVehicleRate(
+                    id: '',
+                    vehicleTypeId: vehicleTypeId,
+                    organizationId: '',
+                    hoursRate: selectedVehicle.value == 2 ? '20' : '40',
+                    everyHoursRate: selectedVehicle.value == 2 ? '10' : '20',
+                    hours24Rate: selectedVehicle.value == 2 ? '200' : '400',
+                    amountFor2: selectedVehicle.value == 2 ? '20' : '40',
+                    amountAfter2: selectedVehicle.value == 2 ? '10' : '20',
+                  ));
+      } catch (e) {
+        log('Error finding vehicle rate: $e');
+        // Create default rate if none is found
+        vehicleRate = GetVehicleRate(
+          id: '',
+          vehicleTypeId: vehicleTypeId,
+          organizationId: '',
+          hoursRate: selectedVehicle.value == 2 ? '20' : '40',
+          everyHoursRate: selectedVehicle.value == 2 ? '10' : '20',
+          hours24Rate: selectedVehicle.value == 2 ? '200' : '400',
+          amountFor2: selectedVehicle.value == 2 ? '20' : '40',
+          amountAfter2: selectedVehicle.value == 2 ? '10' : '20',
+        );
+      }
 
       // Create vehicle entry
       final entryData = {
@@ -279,15 +321,14 @@ class HomeController extends GetxController {
           selectedVehicle.value == 2 ? '2 Wheeler' : '4 Wheeler',
           'Aditya Birla',
           qrData, // Using the qrData string directly
-          vehicleRate.hoursRate ?? '20',
-          vehicleRate.everyHoursRate ?? '10',
-          vehicleRate.hours24Rate ??
-              (selectedVehicle.value == 2 ? '200' : '400'),
+          vehicleRate.hoursRate,
+          vehicleRate.everyHoursRate,
+          vehicleRate.hours24Rate,
           DateFormat('yyyy-MM-dd').format(entryTime),
           DateFormat('hh:mm a').format(entryTime),
           tokenNo,
-          vehicleRate.amountFor2 ?? '20',
-          vehicleRate.amountAfter2 ?? '10',
+          vehicleRate.amountFor2,
+          vehicleRate.amountAfter2,
           selectedVehicle.value == 4
               ? 'assets/images/carpdf.png'
               : 'assets/images/bikepdf.png',
@@ -296,7 +337,7 @@ class HomeController extends GetxController {
       // Reset fields
       vehicleNo.clear();
       selectedVehicle.value = 2;
-      selectedLocation.value = 'Aditya Birla Office';
+      // Keep the current location selected rather than resetting to default
       isPdfLoading.value = true;
 
       isPdfLoading.value = false;
@@ -382,6 +423,9 @@ class HomeController extends GetxController {
                           pw.Text('Vehicle Type : $vehicleTy',
                               style: pw.TextStyle(
                                   fontSize: 25.sp, color: PdfColors.black)),
+                          pw.Text('Location : $location',
+                              style: pw.TextStyle(
+                                  fontSize: 25.sp, color: PdfColors.black)),
                           pw.Text('Entry Date : $date',
                               style: pw.TextStyle(
                                   fontSize: 25.sp, color: PdfColors.black)),
@@ -423,5 +467,78 @@ class HomeController extends GetxController {
     await Printing.layoutPdf(
       onLayout: (format) async => pdf.save(),
     );
+  }
+
+  Future<void> fetchLocations() async {
+    try {
+      isLoading.value = true;
+      final storage = GetStorage();
+      final organizationId = storage.read('organization') ?? '';
+
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('parking_locations')
+          .where('organizationId', isEqualTo: organizationId)
+          .get();
+
+      locations.value = querySnapshot.docs
+          .map((doc) => ParkingLocation.fromMap(doc.data()))
+          .toList();
+
+      // Only show the snackbar if locations is empty and we're not already showing
+      // a different loading operation
+      if (locations.isEmpty && !isOfficeLoading.value) {
+        // Get the location from the current selection before showing the message
+        final currentLocation = selectedLocation.value;
+
+        // Only show the message if there's no selected location either
+        if (currentLocation.isEmpty ||
+            currentLocation == 'Aditya Birla Office') {
+          Get.snackbar(
+            'Info',
+            'No locations available. Please add locations from the admin dashboard.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+            duration: Duration(seconds: 3),
+          );
+        }
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to fetch locations',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> fetchCompanies() async {
+    try {
+      isLoading.value = true;
+      final storage = GetStorage();
+      final organizationId = storage.read('organization') ?? '';
+
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('companies')
+          .where('organizationId', isEqualTo: organizationId)
+          .get();
+
+      companies.value =
+          querySnapshot.docs.map((doc) => Company.fromMap(doc.data())).toList();
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to fetch companies',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
   }
 }
