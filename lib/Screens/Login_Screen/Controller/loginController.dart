@@ -10,8 +10,9 @@ class LoginController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Admin code constant
+  // Admin and Master code constants
   final String adminCode = "myparkingadmin";
+  final String masterCode = "rugved@master_pms";
 
   @override
   void onInit() {
@@ -62,9 +63,24 @@ class LoginController extends GetxController {
         if (userDoc.exists) {
           final userData = userDoc.data()!;
 
-          // Get user role and organization
+          // Get user role, organization and status
           String role = userData['role'] ?? 'user';
           String organization = userData['organization'] ?? '';
+          String status = userData['status'] ?? 'inactive';
+
+          // Check if user is active
+          if (status != 'active') {
+            Get.snackbar(
+              "Account Inactive",
+              "Your account is inactive. Please contact the master administrator.",
+              backgroundColor: Colors.red,
+              colorText: Colors.white,
+              duration: Duration(seconds: 5),
+            );
+            await _auth.signOut();
+            isLoading.value = false;
+            return;
+          }
 
           // Store user data in GetStorage
           await storage.write('authToken', user.uid);
@@ -73,9 +89,17 @@ class LoginController extends GetxController {
           await storage.write('userMasterID', userData['userMasterID']);
           await storage.write('role', role);
           await storage.write('organization', organization);
+          await storage.write('status', status);
 
-          // Navigate to first screen
-          Get.offAllNamed("/first_screen");
+          // Navigate based on user role
+          if (role == 'master') {
+            Get.offAllNamed('/master_first_screen');
+          } else if (role == 'admin') {
+            Get.offAllNamed('/admin_first_screen');
+          } else {
+            // Regular user
+            Get.offAllNamed("/first_screen");
+          }
         } else {
           Get.snackbar("Error", "User not found in database");
         }
@@ -157,6 +181,8 @@ class LoginController extends GetxController {
       String role = 'user';
       if (adminCodeController.text.trim() == adminCode) {
         role = 'admin';
+      } else if (adminCodeController.text.trim() == masterCode) {
+        role = 'master';
       }
 
       // Organization name is required
@@ -182,16 +208,19 @@ class LoginController extends GetxController {
           'organization': organizationController.text.trim(),
           'userMasterID': user.uid,
           'role': role,
+          'status': 'active', // Set status as active by default
           'createdAt': DateTime.now().toIso8601String(),
           'updatedAt': DateTime.now().toIso8601String(),
         });
 
-        // If user is admin, create an organization document
-        if (role == 'admin') {
+        // If user is admin or master, create an organization document
+        if (role == 'admin' || role == 'master') {
           await _firestore.collection('organizations').doc(user.uid).set({
             'name': organizationController.text.trim(),
             'adminId': user.uid,
             'email': userId.text.trim(),
+            'role': role,
+            'status': 'active',
             'createdAt': DateTime.now().toIso8601String(),
           });
         }
@@ -201,7 +230,8 @@ class LoginController extends GetxController {
         Get.snackbar(
           "Success",
           "Account created successfully. Please login." +
-              (role == 'admin' ? " Admin account activated." : ""),
+              (role == 'admin' ? " Admin account activated." : "") +
+              (role == 'master' ? " Master account activated." : ""),
           backgroundColor: Colors.green,
           colorText: Colors.white,
           duration: Duration(seconds: 3),
@@ -231,5 +261,120 @@ class LoginController extends GetxController {
     } catch (e) {
       Get.snackbar("Error", "Failed to sign out");
     }
+  }
+
+  // Create new admin user (for master dashboard)
+  Future<void> createAdminUser() async {
+    isLoading.value = true;
+    try {
+      // Verify fields
+      if (userId.text.trim().isEmpty ||
+          password.text.trim().isEmpty ||
+          nameController.text.trim().isEmpty ||
+          organizationController.text.trim().isEmpty) {
+        Get.snackbar("Error", "All fields are required");
+        isLoading.value = false;
+        return;
+      }
+
+      // Create user with email and password
+      final UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
+        email: userId.text.trim(),
+        password: password.text.trim(),
+      );
+
+      final user = userCredential.user;
+      if (user != null) {
+        // Always create as admin when called from master dashboard
+        String role = 'admin';
+
+        // Create user document in Firestore
+        await _firestore.collection('users').doc(user.uid).set({
+          'username': userId.text.trim(),
+          'name': nameController.text.trim(),
+          'organization': organizationController.text.trim(),
+          'userMasterID': user.uid,
+          'role': role,
+          'status': 'active', // Set status as active by default
+          'createdBy': storage.read('authToken'), // Track who created this user
+          'createdAt': DateTime.now().toIso8601String(),
+          'updatedAt': DateTime.now().toIso8601String(),
+        });
+
+        // Create organization document for the admin
+        await _firestore.collection('organizations').doc(user.uid).set({
+          'name': organizationController.text.trim(),
+          'adminId': user.uid,
+          'email': userId.text.trim(),
+          'role': role,
+          'status': 'active',
+          'createdBy': storage.read('authToken'),
+          'createdAt': DateTime.now().toIso8601String(),
+        });
+
+        // Clear the form
+        userId.clear();
+        password.clear();
+        nameController.clear();
+        organizationController.clear();
+
+        Get.snackbar(
+          "Success",
+          "Admin account created successfully",
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: Duration(seconds: 3),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'weak-password') {
+        Get.snackbar("Error", "The password provided is too weak.");
+      } else if (e.code == 'email-already-in-use') {
+        Get.snackbar("Error", "The account already exists for that email.");
+      } else {
+        Get.snackbar("Error", "${e.message}");
+      }
+    } catch (e) {
+      Get.snackbar("Error", "An error occurred: $e");
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Toggle user status (active/inactive)
+  Future<void> toggleUserStatus(String userId, bool makeActive) async {
+    try {
+      String newStatus = makeActive ? 'active' : 'inactive';
+
+      // Update user status in Firestore
+      await _firestore.collection('users').doc(userId).update({
+        'status': newStatus,
+        'updatedAt': DateTime.now().toIso8601String(),
+      });
+
+      // Also update in organizations collection if exists
+      final orgDoc =
+          await _firestore.collection('organizations').doc(userId).get();
+      if (orgDoc.exists) {
+        await _firestore.collection('organizations').doc(userId).update({
+          'status': newStatus,
+        });
+      }
+
+      Get.snackbar(
+        "Success",
+        "User status updated to $newStatus",
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar("Error", "Failed to update user status: $e");
+    }
+  }
+
+  // Get all organizations (for master dashboard)
+  Stream<QuerySnapshot> getAllOrganizations() {
+    return _firestore.collection('organizations').snapshots();
   }
 }

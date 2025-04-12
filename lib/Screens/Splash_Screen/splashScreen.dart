@@ -16,20 +16,41 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  final GetStorage _storage = GetStorage();
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     Future.delayed(const Duration(seconds: 3), () {
       if (kIsWeb) {
-        GetStorage().read("authToken") != null
+        _storage.read("authToken") != null
             ? Get.offAllNamed('/exit_web_screen')
             : Get.offAllNamed("/login_web_screen");
       } else if (Platform.isAndroid || Platform.isIOS) {
-        GetStorage().read("authToken") != null
-            ? Get.offAllNamed('/first_screen')
-            : Get.offAllNamed("/login_screen");
-      } else {}
+        if (_storage.read("authToken") != null) {
+          // Check user role for appropriate navigation
+          final String? role = _storage.read('role');
+          final String? status = _storage.read('status');
+
+          // Check if user is active
+          if (status != 'active') {
+            Get.offAllNamed('/login_screen');
+            return;
+          }
+
+          // Navigate based on user role
+          if (role == 'master') {
+            Get.offAllNamed('/master_first_screen');
+          } else if (role == 'admin') {
+            Get.offAllNamed('/admin_first_screen');
+          } else {
+            // Regular user
+            Get.offAllNamed('/first_screen');
+          }
+        } else {
+          Get.offAllNamed("/login_screen");
+        }
+      }
     });
   }
 
