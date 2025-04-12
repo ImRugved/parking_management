@@ -96,7 +96,8 @@ class ExitScreen extends GetView<ExitController> {
                         inputFormatters: [
                           FilteringTextInputFormatter.allow(
                             RegExp(r'[a-zA-Z0-9]'),
-                          )
+                          ),
+                          LengthLimitingTextInputFormatter(10),
                         ],
                         decoration: InputDecoration(
                           labelStyle: getTextTheme().labelMedium,
