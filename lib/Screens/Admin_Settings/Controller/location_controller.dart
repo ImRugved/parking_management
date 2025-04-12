@@ -25,7 +25,7 @@ class LocationController extends GetxController {
 
   Future<void> fetchLocations() async {
     try {
-      final String organizationId = _storage.read('userMasterID') ?? '';
+      final String organizationId = _storage.read('organization') ?? '';
 
       final QuerySnapshot snapshot = await _firestore
           .collection('locations')
@@ -48,15 +48,15 @@ class LocationController extends GetxController {
 
   Future<void> addLocation(String name) async {
     try {
-      final String organizationId = _storage.read('userMasterID') ?? '';
+      final String organizationId = _storage.read('organization') ?? '';
       final String id = _firestore.collection('locations').doc().id;
 
       final ParkingLocation location = ParkingLocation(
         id: id,
         name: name,
         organizationId: organizationId,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: DateTime.now().toIso8601String(),
+        updatedAt: DateTime.now().toIso8601String(),
       );
 
       await _firestore.collection('locations').doc(id).set(location.toMap());

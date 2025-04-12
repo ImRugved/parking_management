@@ -25,22 +25,12 @@ class FirstScreen extends StatelessWidget {
       appBar: PreferredSize(
         preferredSize: Size(Get.width, 65.h),
         child: AppBar(
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Image.asset(
-                "assets/images/ablogo.png",
-                height: 50.h,
-                width: 70.w,
-              ),
-              Flexible(
-                child: Text(
-                  organizationName,
-                  style: getTextTheme().headlineLarge,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+          title: Text(
+            "Parking Management System",
+            style: GoogleFonts.poppins(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           backgroundColor: ConstColors.white,
           surfaceTintColor: ConstColors.backgroundColor,

@@ -6,6 +6,7 @@ import 'package:gap/gap.dart';
 import 'package:aditya_birla/Screens/HomeScreen/Controller/HomeController.dart';
 import 'package:aditya_birla/Constant/const_colors.dart';
 import 'package:aditya_birla/Widgets/custom_textfield.dart';
+import 'package:aditya_birla/Models/location_model.dart';
 
 class CarScreenPage extends StatelessWidget {
   final HomeController controller = Get.find<HomeController>();
@@ -84,7 +85,15 @@ class CarScreenPage extends StatelessWidget {
                             ))
                         .toList(),
                     onChanged: (value) {
-                      controller.selectedLocation.value = value ?? '';
+                      if (value != null && value.isNotEmpty) {
+                        controller.selectedLocation.value = value;
+                        var selectedLoc = controller.locations.firstWhere(
+                            (loc) => loc.id == value,
+                            orElse: () => ParkingLocation(
+                                id: "", name: "Unknown", organizationId: ""));
+                        print(
+                            "Selected location in dropdown: ${selectedLoc.id} - ${selectedLoc.name}");
+                      }
                     },
                     validator: (value) {
                       if (value == null || value.isEmpty) {

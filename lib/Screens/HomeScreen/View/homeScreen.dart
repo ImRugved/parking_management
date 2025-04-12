@@ -28,11 +28,6 @@ class HomeScreen extends GetView<HomeController> {
                 title: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Image.asset(
-                      "assets/images/ablogo.png",
-                      height: 50.h,
-                      width: 70.w,
-                    ),
                     Flexible(
                       child: Text(
                         "Parking Management",
@@ -121,6 +116,14 @@ class HomeScreen extends GetView<HomeController> {
                           hintText: 'Please specify the location',
                         ),
                         onChanged: (value) {
+                          // Generate a custom location ID when text is entered
+                          if (value.isNotEmpty) {
+                            final customId =
+                                'custom-${DateTime.now().millisecondsSinceEpoch}';
+                            controller.selectedLocation.value = customId;
+                          } else {
+                            controller.selectedLocation.value = '';
+                          }
                           controller.update(["homeScreen"]);
                         },
                       ),

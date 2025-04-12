@@ -44,21 +44,22 @@ class HomeController extends GetxController {
     super.onInit();
 
     // First, fetch locations from Firebase
-    fetchLocations();
+    fetchLocations().then((_) {
+      // Set the default location if locations are found
+      if (locations.isNotEmpty) {
+        // Take the first location as default
+        selectedLocation.value = locations.first.id;
+        log("Default location set to: ${locations.first.id} - ${locations.first.name}");
+      } else {
+        log("No locations found during initialization");
+      }
+    });
 
     // Then set up other data and UI elements
     getVehicleRate();
     updateDateTime();
     getLocationList();
     locationType = null;
-
-    // Only set a default location if no locations were loaded
-    if (locations.isEmpty) {
-      selectedLocation.value = '';
-    } else if (locations.isNotEmpty) {
-      // Set the first available location as default
-      selectedLocation.value = locations.first.id;
-    }
 
     // Set up the timer for updating date/time
     timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -105,12 +106,47 @@ class HomeController extends GetxController {
   // Method to handle location selection
   void onLocationSelected(String? value) {
     locationType = value;
+
     if (value == 'Other') {
       isOtherLocationSelected.value = true;
-    } else {
+      // For "Other", we will set the selectedLocation when the custom text is entered
+      selectedLocation.value = '';
+    } else if (value != null) {
       isOtherLocationSelected.value = false;
       customLocationController.clear();
+
+      // Find the location ID from the name and set selectedLocation.value
+      try {
+        // Look up in locationTypeList first
+        final selectedLocationItem = locationTypeList.firstWhere(
+            (loc) => loc.name == value,
+            orElse: () => GetOfficeModel(id: '', name: '', address: ''));
+
+        final locationId = selectedLocationItem.id ?? '';
+        if (locationId.isNotEmpty) {
+          log("Setting selectedLocation.value to: $locationId from locationTypeList");
+          selectedLocation.value = locationId;
+        } else {
+          // If not found in locationTypeList, look in locations list
+          final locationInList = locations.firstWhere(
+              (loc) => loc.name == value,
+              orElse: () =>
+                  ParkingLocation(id: '', name: '', organizationId: ''));
+
+          if (locationInList.id.isNotEmpty) {
+            log("Setting selectedLocation.value to: ${locationInList.id} from locations list");
+            selectedLocation.value = locationInList.id;
+          } else {
+            log("Location not found in either list: $value");
+            selectedLocation.value = '';
+          }
+        }
+      } catch (e) {
+        log("Error setting selectedLocation: $e");
+        selectedLocation.value = '';
+      }
     }
+
     update(["homeScreen"]);
   }
 
@@ -215,6 +251,20 @@ class HomeController extends GetxController {
       update(["homeScreen"]);
       log("Vehicle No: ${vehicleNo.text.toUpperCase()}");
 
+      // Validate inputs for normal location selection
+      if (selectedLocation.value.isEmpty &&
+          (locationType != 'Other' || customLocationController.text.isEmpty)) {
+        Get.snackbar(
+          "Error",
+          "Please select a valid location or enter a custom location",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        isPdfLoading.value = false;
+        update(['homeScreen']);
+        return;
+      }
+
       // Check if vehicle is already parked
       final formattedVehicleNumber = vehicleNo.text.trim().toUpperCase();
       final existingEntries = await _firestore
@@ -253,7 +303,53 @@ class HomeController extends GetxController {
 
       final entryTime = DateTime.now();
       final tokenNo = UniqueKey().hashCode.toString().substring(0, 4);
-      String locationToStore = selectedLocation.value;
+
+      // Get location ID and name - handle custom locations
+      String locationId = '';
+      String locationName = "Unknown Location";
+
+      // Check if we have a custom location
+      if (locationType == 'Other' && customLocationController.text.isNotEmpty) {
+        // Using custom location
+        locationId = 'custom-${DateTime.now().millisecondsSinceEpoch}';
+        locationName = customLocationController.text.trim();
+        log("Using custom location: $locationName");
+      } else {
+        // Using selected location from dropdown
+        locationId = selectedLocation.value;
+
+        log("LOCATION DEBUG INFO:");
+        log("Selected location ID: $locationId");
+        log("Locations list contains ${locations.length} locations");
+
+        for (var loc in locations) {
+          log("Available location: ${loc.id} - ${loc.name}");
+        }
+
+        // Check if the selected location ID exists in our locations list
+        bool locationFound = false;
+        for (var loc in locations) {
+          if (loc.id == locationId) {
+            locationName = loc.name;
+            locationFound = true;
+            log("✓ MATCH FOUND: Location with ID $locationId found: $locationName");
+            break;
+          }
+        }
+
+        if (!locationFound) {
+          log("⚠ WARNING: Location with ID $locationId not found in the locations list");
+
+          // Try to set a default location if we have any
+          if (locations.isNotEmpty) {
+            locationId = locations.first.id;
+            locationName = locations.first.name;
+            log("Setting default location: $locationId - $locationName");
+          } else {
+            log("No locations available to use as default");
+          }
+        }
+      }
 
       // Generate QR code data as a string
       final qrData = "${vehicleNo.text.toUpperCase()}_$tokenNo";
@@ -302,7 +398,8 @@ class HomeController extends GetxController {
       final entryData = {
         'vehicleNumber': vehicleNo.text.toUpperCase(),
         'vehicleType': selectedVehicle.value == 2 ? '2 Wheeler' : '4 Wheeler',
-        'location': locationToStore,
+        'locationId': locationId,
+        'location': locationName,
         'entryTime': entryTime.toIso8601String(),
         'tokenNo': tokenNo,
         'status': 'active',
@@ -332,7 +429,7 @@ class HomeController extends GetxController {
           selectedVehicle.value == 4
               ? 'assets/images/carpdf.png'
               : 'assets/images/bikepdf.png',
-          locationToStore);
+          locationName); // Use location name instead of ID
 
       // Reset fields
       vehicleNo.clear();
@@ -367,6 +464,7 @@ class HomeController extends GetxController {
     final pdf = pw.Document();
 
     log("VehicleType $vehicleNumber");
+    log("Selected Location: $location");
 
     // Load image asset
     final ByteData imageData = await rootBundle.load(bikeIcon);
@@ -475,38 +573,50 @@ class HomeController extends GetxController {
       final storage = GetStorage();
       final organizationId = storage.read('organization') ?? '';
 
+      log("Fetching locations for organization: $organizationId");
+
       final querySnapshot = await FirebaseFirestore.instance
-          .collection('parking_locations')
+          .collection('locations')
           .where('organizationId', isEqualTo: organizationId)
           .get();
 
-      locations.value = querySnapshot.docs
-          .map((doc) => ParkingLocation.fromMap(doc.data()))
-          .toList();
+      log("Location query returned ${querySnapshot.docs.length} results");
 
-      // Only show the snackbar if locations is empty and we're not already showing
-      // a different loading operation
-      if (locations.isEmpty && !isOfficeLoading.value) {
-        // Get the location from the current selection before showing the message
-        final currentLocation = selectedLocation.value;
+      if (querySnapshot.docs.isEmpty) {
+        log("No locations found in the database for this organization");
+        locations.clear();
+      } else {
+        // Convert documents to ParkingLocation objects
+        final locationsList = querySnapshot.docs.map((doc) {
+          final data = doc.data();
+          log("Location document: ${doc.id} - ${data.toString()}");
+          return ParkingLocation.fromMap(data);
+        }).toList();
 
-        // Only show the message if there's no selected location either
-        if (currentLocation.isEmpty ||
-            currentLocation == 'Aditya Birla Office') {
-          Get.snackbar(
-            'Info',
-            'No locations available. Please add locations from the admin dashboard.',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.orange,
-            colorText: Colors.white,
-            duration: Duration(seconds: 3),
-          );
+        locations.value = locationsList;
+
+        log("Loaded ${locations.length} locations:");
+        for (var loc in locations) {
+          log("- ${loc.id}: ${loc.name}");
         }
       }
+
+      // Only show the snackbar if locations is empty
+      if (locations.isEmpty) {
+        Get.snackbar(
+          'Warning',
+          'No locations available. Please add locations from the admin dashboard.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          duration: Duration(seconds: 3),
+        );
+      }
     } catch (e) {
+      log("ERROR fetching locations: $e");
       Get.snackbar(
         'Error',
-        'Failed to fetch locations',
+        'Failed to fetch locations: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,

@@ -31,11 +31,7 @@ class ExitScreen extends GetView<ExitController> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           // Logo on the left
-                          Image.asset(
-                            "assets/images/ablogo.png",
-                            height: 45.h,
-                            width: 70.w,
-                          ),
+
                           // Title in the center with flexible width
                           Expanded(
                             child: Padding(

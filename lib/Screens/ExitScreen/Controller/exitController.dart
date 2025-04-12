@@ -109,28 +109,68 @@ class ExitController extends GetxController {
         final entryTime = DateTime.parse(entryData['entryTime']);
         final exitTime = DateTime.now();
         final duration = exitTime.difference(entryTime);
-        final hours = duration.inHours;
 
-        // Calculate charges based on duration and vehicle type
+        // Calculate total minutes for more precise rate calculation
+        final totalMinutes = duration.inMinutes;
+        final hours = totalMinutes ~/ 60; // Integer division
+        final minutes = totalMinutes % 60;
+
+        // Calculate charges based on duration and vehicle type with 30-minute grace periods
         double charges = 0;
         final vehicleType = entryData['vehicleType'];
 
         if (vehicleType == '2 Wheeler') {
-          if (hours <= 2) {
+          if (totalMinutes <= 150) {
+            // 2 hours + 30 min grace period (2.5 hours = 150 minutes)
             charges = 20;
-          } else if (hours >= 24) {
-            charges = 200;
+          } else if (totalMinutes >= 1440 && totalMinutes <= 1470) {
+            // 24 hours + 30 min grace period
+            charges = 190; // 24-hour rate
+          } else if (totalMinutes > 1470) {
+            // More than 24 hours + 30 min
+            // Calculate full days (24 hours) and remaining hours
+            final double fullDays = (totalMinutes ~/ 1440).toDouble();
+            final remainingMinutes = totalMinutes % 1440;
+
+            if (remainingMinutes <= 150) {
+              // If remaining time is within 2.5 hours
+              charges = fullDays * 190 + 20;
+            } else {
+              final additionalHours = (remainingMinutes - 120) / 60;
+              final additionalCharges = (additionalHours.ceil() * 10);
+              charges = fullDays * 190 + 20 + additionalCharges;
+            }
           } else {
-            charges = 20 + (hours - 2) * 10;
+            // Between 2.5 hours and 24 hours
+            final additionalHours = (totalMinutes - 120) / 60;
+            charges = 20 + (additionalHours.ceil() * 10);
           }
         } else {
           // 4 Wheeler
-          if (hours <= 2) {
+          if (totalMinutes <= 150) {
+            // 2 hours + 30 min grace period (2.5 hours = 150 minutes)
             charges = 40;
-          } else if (hours >= 24) {
-            charges = 400;
+          } else if (totalMinutes >= 1440 && totalMinutes <= 1470) {
+            // 24 hours + 30 min grace period
+            charges = 400; // 24-hour rate
+          } else if (totalMinutes > 1470) {
+            // More than 24 hours + 30 min
+            // Calculate full days (24 hours) and remaining hours
+            final double fullDays = (totalMinutes ~/ 1440).toDouble();
+            final remainingMinutes = totalMinutes % 1440;
+
+            if (remainingMinutes <= 150) {
+              // If remaining time is within 2.5 hours
+              charges = fullDays * 400 + 40;
+            } else {
+              final additionalHours = (remainingMinutes - 120) / 60;
+              final additionalCharges = (additionalHours.ceil() * 20);
+              charges = fullDays * 400 + 40 + additionalCharges;
+            }
           } else {
-            charges = 40 + (hours - 2) * 20;
+            // Between 2.5 hours and 24 hours
+            final additionalHours = (totalMinutes - 120) / 60;
+            charges = 40 + (additionalHours.ceil() * 20);
           }
         }
 
@@ -377,29 +417,68 @@ class ExitController extends GetxController {
       final entryTime = DateTime.parse(entryData['entryTime']);
       final exitTime = DateTime.now();
       final duration = exitTime.difference(entryTime);
-      final hours = duration.inHours;
-      final minutes = duration.inMinutes % 60;
 
-      // Calculate charges based on duration and vehicle type
+      // Calculate total minutes for more precise rate calculation
+      final totalMinutes = duration.inMinutes;
+      final hours = totalMinutes ~/ 60; // Integer division
+      final minutes = totalMinutes % 60;
+
+      // Calculate charges based on duration and vehicle type with 30-minute grace periods
       double charges = 0;
       final vehicleType = entryData['vehicleType'];
 
       if (vehicleType == '2 Wheeler') {
-        if (hours <= 2) {
+        if (totalMinutes <= 150) {
+          // 2 hours + 30 min grace period (2.5 hours = 150 minutes)
           charges = 20;
-        } else if (hours >= 24) {
-          charges = 200;
+        } else if (totalMinutes >= 1440 && totalMinutes <= 1470) {
+          // 24 hours + 30 min grace period
+          charges = 190; // 24-hour rate
+        } else if (totalMinutes > 1470) {
+          // More than 24 hours + 30 min
+          // Calculate full days (24 hours) and remaining hours
+          final double fullDays = (totalMinutes ~/ 1440).toDouble();
+          final remainingMinutes = totalMinutes % 1440;
+
+          if (remainingMinutes <= 150) {
+            // If remaining time is within 2.5 hours
+            charges = fullDays * 190 + 20;
+          } else {
+            final additionalHours = (remainingMinutes - 120) / 60;
+            final additionalCharges = (additionalHours.ceil() * 10);
+            charges = fullDays * 190 + 20 + additionalCharges;
+          }
         } else {
-          charges = 20 + (hours - 2) * 10;
+          // Between 2.5 hours and 24 hours
+          final additionalHours = (totalMinutes - 120) / 60;
+          charges = 20 + (additionalHours.ceil() * 10);
         }
       } else {
         // 4 Wheeler
-        if (hours <= 2) {
+        if (totalMinutes <= 150) {
+          // 2 hours + 30 min grace period (2.5 hours = 150 minutes)
           charges = 40;
-        } else if (hours >= 24) {
-          charges = 400;
+        } else if (totalMinutes >= 1440 && totalMinutes <= 1470) {
+          // 24 hours + 30 min grace period
+          charges = 400; // 24-hour rate
+        } else if (totalMinutes > 1470) {
+          // More than 24 hours + 30 min
+          // Calculate full days (24 hours) and remaining hours
+          final double fullDays = (totalMinutes ~/ 1440).toDouble();
+          final remainingMinutes = totalMinutes % 1440;
+
+          if (remainingMinutes <= 150) {
+            // If remaining time is within 2.5 hours
+            charges = fullDays * 400 + 40;
+          } else {
+            final additionalHours = (remainingMinutes - 120) / 60;
+            final additionalCharges = (additionalHours.ceil() * 20);
+            charges = fullDays * 400 + 40 + additionalCharges;
+          }
         } else {
-          charges = 40 + (hours - 2) * 20;
+          // Between 2.5 hours and 24 hours
+          final additionalHours = (totalMinutes - 120) / 60;
+          charges = 40 + (additionalHours.ceil() * 20);
         }
       }
 
@@ -425,7 +504,7 @@ class ExitController extends GetxController {
           vehicleType,
           entryTime.toIso8601String(),
           exitTime.toIso8601String(),
-          entryData['location'] ?? 'Main Parking',
+          entryData['location'] ?? 'Unknown Location',
           duration,
           entryData['tokenNo']);
 
