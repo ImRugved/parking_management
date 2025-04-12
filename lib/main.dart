@@ -73,7 +73,7 @@ class _MyAppState extends State<MyApp> {
         builder: (context, state) {
           return GetMaterialApp(
             debugShowCheckedModeBanner: false,
-            title: 'Aditya Birla PMS',
+            title: "Parking Management System",
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
               useMaterial3: true,

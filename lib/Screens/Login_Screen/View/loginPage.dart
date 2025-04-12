@@ -29,11 +29,12 @@ class LoginPageScreen extends GetView<LoginController> {
                   Gap(35.h),
                   Center(
                     child: Image.asset(
-                      "assets/images/ablogo.png",
+                      "assets/images/icon.png",
                       height: 100.h,
                       width: 140.w,
                     ),
                   ),
+                  Gap(25.h),
                   Center(
                     child: Text(
                       "Parking Management System",

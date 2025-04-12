@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:gap/gap.dart';
 import '../../Screens/Login_Screen/Controller/loginController.dart';
 
 class MasterFirstScreen extends StatefulWidget {
@@ -16,6 +19,7 @@ class _MasterFirstScreenState extends State<MasterFirstScreen>
   final LoginController _loginController = Get.put(LoginController());
   final GetStorage _storage = GetStorage();
   late TabController _tabController;
+  int _currentIndex = 0;
 
   @override
   void initState() {
@@ -33,14 +37,17 @@ class _MasterFirstScreenState extends State<MasterFirstScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Master Dashboard'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Create Admin', icon: Icon(Icons.person_add)),
-            Tab(text: 'Manage Users', icon: Icon(Icons.people)),
-          ],
-        ),
+        title: Text(
+            _currentIndex == 0 ? 'Master Dashboard' : 'Vehicle Entry/Exit'),
+        bottom: _currentIndex == 0
+            ? TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: 'Create Admin', icon: Icon(Icons.person_add)),
+                  Tab(text: 'Manage Users', icon: Icon(Icons.people)),
+                ],
+              )
+            : null,
       ),
       drawer: Drawer(
         child: ListView(
@@ -81,7 +88,22 @@ class _MasterFirstScreenState extends State<MasterFirstScreen>
             ListTile(
               leading: const Icon(Icons.dashboard),
               title: const Text('Master Dashboard'),
+              selected: _currentIndex == 0,
               onTap: () {
+                setState(() {
+                  _currentIndex = 0;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.directions_car),
+              title: const Text('Vehicle Entry/Exit'),
+              selected: _currentIndex == 1,
+              onTap: () {
+                setState(() {
+                  _currentIndex = 1;
+                });
                 Navigator.pop(context);
               },
             ),
@@ -103,13 +125,15 @@ class _MasterFirstScreenState extends State<MasterFirstScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildCreateAdminTab(),
-          _buildManageUsersTab(),
-        ],
-      ),
+      body: _currentIndex == 0
+          ? TabBarView(
+              controller: _tabController,
+              children: [
+                _buildCreateAdminTab(),
+                _buildManageUsersTab(),
+              ],
+            )
+          : _buildVehicleEntryExitScreen(),
     );
   }
 
@@ -266,6 +290,134 @@ class _MasterFirstScreenState extends State<MasterFirstScreen>
           },
         );
       },
+    );
+  }
+
+  Widget _buildVehicleEntryExitScreen() {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Container(
+            height: 0.2.sh,
+            width: 1.sw,
+            decoration: const BoxDecoration(
+              color: Colors.blue,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "Welcome to",
+                  style: GoogleFonts.poppins(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  "Parking Management App",
+                  style: GoogleFonts.poppins(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                Gap(10.h),
+                Text(
+                  "Powered by Rugved Belkundkar",
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            height: 0.7.sh,
+            width: 1.sw,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(30),
+                topRight: Radius.circular(30),
+              ),
+            ),
+            child: Column(
+              children: [
+                Gap(20.h),
+                Text(
+                  "Vehicle Entry/Exit",
+                  style: GoogleFonts.poppins(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue,
+                  ),
+                ),
+                Gap(20.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        // Get.toNamed('/carScreen');
+                      },
+                      child: Container(
+                        height: 0.25.sh,
+                        width: 0.4.sw,
+                        decoration: BoxDecoration(
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Entry",
+                              style: GoogleFonts.poppins(
+                                fontSize: 20.sp,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        // Get.toNamed('/bikeScreen');
+                      },
+                      child: Container(
+                        height: 0.25.sh,
+                        width: 0.4.sw,
+                        decoration: BoxDecoration(
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Exit",
+                              style: GoogleFonts.poppins(
+                                fontSize: 20.sp,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

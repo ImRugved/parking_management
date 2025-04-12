@@ -192,7 +192,7 @@ class FirstScreen extends StatelessWidget {
                   border: OutlineInputBorder(),
                   labelText: "Admin Code",
                 ),
-                obscureText: true,
+                obscureText: false,
               ),
             ],
           ),

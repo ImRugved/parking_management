@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -90,12 +92,18 @@ class LoginController extends GetxController {
           await storage.write('role', role);
           await storage.write('organization', organization);
           await storage.write('status', status);
+          userId.clear();
+          password.clear();
+          nameController.clear();
+          organizationController.clear();
+          adminCodeController.clear();
 
+          log('role is $role');
           // Navigate based on user role
           if (role == 'master') {
             Get.offAllNamed('/master_first_screen');
           } else if (role == 'admin') {
-            Get.offAllNamed('/admin_first_screen');
+            Get.offAllNamed('/first_screen');
           } else {
             // Regular user
             Get.offAllNamed("/first_screen");

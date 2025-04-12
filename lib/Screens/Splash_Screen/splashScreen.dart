@@ -64,13 +64,20 @@ class _SplashScreenState extends State<SplashScreen> {
           ),
           Center(
             child: CircleAvatar(
-              radius: kIsWeb ? 25.sp : 55.sp,
+              radius: kIsWeb ? 25.sp : 70.sp,
               backgroundColor: ConstColors.white,
               child: Center(
-                  child: Image.asset(
-                "assets/images/ablogo.png",
-                height: kIsWeb ? 120 : 55.h,
-                width: kIsWeb ? 125 : 100.w,
+                  child: Container(
+                height: kIsWeb ? 120 : 117.h,
+                width: kIsWeb ? 125 : 150.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  image: DecorationImage(
+                    image: AssetImage(
+                      "assets/images/icon.png",
+                    ),
+                  ),
+                ),
               )),
             ),
           ),
@@ -90,7 +97,7 @@ class _SplashScreenState extends State<SplashScreen> {
                       ),
                     ),
                     TextSpan(
-                      text: 'DAccess Security Systems Pvt. Ltd.',
+                      text: 'Rugved Belkundkar.',
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w600,
                         color: ConstColors.white,
