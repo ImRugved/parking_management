@@ -12,7 +12,7 @@ class FirstScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Define bottomSheet height to account for it in the padding
-    final bottomSheetHeight = 60.h;
+    final bottomSheetHeight = 40.h;
 
     // Check if user is admin
     final userRole = GetStorage().read('role') ?? 'user';
@@ -23,13 +23,13 @@ class FirstScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: Size(Get.width, 65.h),
+        preferredSize: Size(Get.width, 60.h),
         child: AppBar(
           title: Text(
             "Parking Management System",
             style: GoogleFonts.poppins(
               fontSize: 16.sp,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.normal,
             ),
           ),
           backgroundColor: ConstColors.white,
@@ -121,7 +121,7 @@ class FirstScreen extends StatelessWidget {
             children: [
               SizedBox(height: 20.h),
               Text(
-                "Welcome to ${organizationName}",
+                "Welcome ${organizationName}",
                 style: GoogleFonts.poppins(
                   fontSize: 22.sp,
                   fontWeight: FontWeight.bold,
@@ -129,11 +129,11 @@ class FirstScreen extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 40.h),
+              SizedBox(height: 20.h),
               entryCard(),
               SizedBox(height: 20.h),
               exitCard(),
-              SizedBox(height: 40.h),
+              SizedBox(height: 20.h),
             ],
           ),
         ),
@@ -369,7 +369,7 @@ class FirstScreen extends StatelessWidget {
       },
       child: Container(
         width: Get.width,
-        padding: EdgeInsets.symmetric(vertical: 25.h, horizontal: 20.w),
+        padding: EdgeInsets.symmetric(vertical: 15.h, horizontal: 20.w),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(15),
@@ -385,10 +385,10 @@ class FirstScreen extends StatelessWidget {
           children: [
             Image.asset(
               'assets/images/car.png',
-              height: 100.h,
+              height: 80.h,
               width: 100.w,
             ),
-            SizedBox(height: 15.h),
+            SizedBox(height: 10.h),
             Text(
               "Vehicle Entry",
               style: GoogleFonts.poppins(
@@ -419,7 +419,7 @@ class FirstScreen extends StatelessWidget {
       },
       child: Container(
         width: Get.width,
-        padding: EdgeInsets.symmetric(vertical: 25.h, horizontal: 20.w),
+        padding: EdgeInsets.symmetric(vertical: 15.h, horizontal: 20.w),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(15),
@@ -435,7 +435,7 @@ class FirstScreen extends StatelessWidget {
           children: [
             Image.asset(
               'assets/images/bike.png',
-              height: 100.h,
+              height: 80.h,
               width: 100.w,
             ),
             SizedBox(height: 15.h),

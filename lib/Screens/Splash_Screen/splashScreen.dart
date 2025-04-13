@@ -42,7 +42,7 @@ class _SplashScreenState extends State<SplashScreen> {
           if (role == 'master') {
             Get.offAllNamed('/master_first_screen');
           } else if (role == 'admin') {
-            Get.offAllNamed('/admin_first_screen');
+            Get.offAllNamed('/first_screen');
           } else {
             // Regular user
             Get.offAllNamed('/first_screen');

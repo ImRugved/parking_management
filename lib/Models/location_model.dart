@@ -2,6 +2,7 @@ class ParkingLocation {
   final String id;
   final String name;
   final String organizationId;
+  final String adminId;
   final String createdAt;
   final String updatedAt;
 
@@ -9,6 +10,7 @@ class ParkingLocation {
     required this.id,
     required this.name,
     required this.organizationId,
+    this.adminId = '',
     this.createdAt = '',
     this.updatedAt = '',
   });
@@ -18,6 +20,7 @@ class ParkingLocation {
       id: map['id'] ?? '',
       name: map['name'] ?? '',
       organizationId: map['organizationId'] ?? '',
+      adminId: map['adminId'] ?? '',
       createdAt: map['createdAt'] ?? '',
       updatedAt: map['updatedAt'] ?? '',
     );
@@ -28,6 +31,7 @@ class ParkingLocation {
       'id': id,
       'name': name,
       'organizationId': organizationId,
+      'adminId': adminId,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };

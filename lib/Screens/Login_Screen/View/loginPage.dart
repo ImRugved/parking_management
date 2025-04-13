@@ -64,7 +64,11 @@ class LoginPageScreen extends GetView<LoginController> {
                     },
                     inputFormatters: const [],
                     onChanged: (value) {
-                      controller.userId.text = value;
+                      // controller.userId.text = value;
+                      // controller.update(["homeScreen"]);
+                    },
+                    onSaved: (value) {
+                      controller.userId.text = value!;
                       controller.update(["homeScreen"]);
                     },
                   ),
@@ -101,7 +105,11 @@ class LoginPageScreen extends GetView<LoginController> {
                     ],
                     readOnly: false,
                     onChanged: (value) {
-                      controller.password.text = value;
+                      // controller.password.text = value;
+                      // controller.update(["homeScreen"]);
+                    },
+                    onSaved: (value) {
+                      controller.password.text = value!;
                       controller.update(["homeScreen"]);
                     },
                   ),

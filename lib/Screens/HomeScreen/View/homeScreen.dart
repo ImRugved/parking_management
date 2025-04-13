@@ -85,49 +85,7 @@ class HomeScreen extends GetView<HomeController> {
                       keyboardType: TextInputType.text,
                     ),
                   ),
-                  Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 16.w, vertical: 5.h),
-                    child: CustomDropDown(
-                      value: controller.locationType,
-                      items: controller.locationTypeList
-                          .map((value) => DropdownMenuItem(
-                                value: value.name,
-                                child: Text(value.name!),
-                              ))
-                          .toList(),
-                      label: "Select Location *",
-                      hintText: 'Please select location name',
-                      style: getTextTheme().headlineMedium,
-                      onChanged: (value) {
-                        controller.onLocationSelected(value);
-                      },
-                    ),
-                  ),
-                  // Show custom location field if "Other" is selected
-                  if (controller.isOtherLocationSelected.value)
-                    Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16.w, vertical: 5.h),
-                      child: TextField(
-                        controller: controller.customLocationController,
-                        decoration: const InputDecoration(
-                          labelText: 'Enter Custom Location',
-                          hintText: 'Please specify the location',
-                        ),
-                        onChanged: (value) {
-                          // Generate a custom location ID when text is entered
-                          if (value.isNotEmpty) {
-                            final customId =
-                                'custom-${DateTime.now().millisecondsSinceEpoch}';
-                            controller.selectedLocation.value = customId;
-                          } else {
-                            controller.selectedLocation.value = '';
-                          }
-                          controller.update(["homeScreen"]);
-                        },
-                      ),
-                    ),
+                  locationList(),
                   typeVehicle(),
                   RoundedButton(
                           width: 150.w,
@@ -269,6 +227,62 @@ class HomeScreen extends GetView<HomeController> {
                       ],
                     ),
                   ),
+                );
+        });
+  }
+
+  Widget locationList() {
+    return GetBuilder(
+        init: HomeController(),
+        id: "locations",
+        builder: (_) {
+          return controller.isOfficeLoading.value == true
+              ? Center(
+                  child: SizedBox(
+                    height: 20.h,
+                    width: 20.w,
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
+                  ),
+                )
+              : Column(
+                  children: [
+                    Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16.w, vertical: 5.h),
+                      child: CustomDropDown(
+                        value: controller.locationType,
+                        items: controller.locationTypeList
+                            .map((value) => DropdownMenuItem(
+                                  value: value.name,
+                                  child: Text(value.name ?? "Unknown"),
+                                ))
+                            .toList(),
+                        label: "Select Location *",
+                        hintText: 'Please select location name',
+                        style: getTextTheme().headlineMedium,
+                        onChanged: (value) {
+                          controller.onLocationSelected(value);
+                        },
+                      ),
+                    ),
+                    if (controller.isOtherLocationSelected.value)
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 16.w, vertical: 5.h),
+                        child: TextField(
+                          controller: controller.customLocationController,
+                          decoration: const InputDecoration(
+                            labelText: 'Enter Custom Location',
+                            hintText: 'Please specify the location',
+                          ),
+                          onChanged: (value) {
+                            controller.update(["locations"]);
+                          },
+                        ),
+                      ),
+                  ],
                 );
         });
   }

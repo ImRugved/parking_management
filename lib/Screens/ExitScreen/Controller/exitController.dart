@@ -38,6 +38,14 @@ class ExitController extends GetxController {
       isLoading.value = true;
       paymentAmount.clear();
 
+      // Get current admin ID
+      final currentAdminId = storage.read('userMasterID') ?? '';
+      if (currentAdminId.isEmpty) {
+        Get.snackbar("Error", "User ID not found. Please login again.");
+        isLoading.value = false;
+        return;
+      }
+
       // First check if vehicle exists at all (active or completed)
       final allEntriesSnapshot = await _firestore
           .collection('vehicle_entries')
@@ -99,6 +107,21 @@ class ExitController extends GetxController {
       }
 
       final entryData = activeEntriesSnapshot.docs.first.data();
+
+      // Check if the current admin is the one who created the entry
+      if (entryData['adminId'] != currentAdminId) {
+        Get.snackbar(
+          "Error",
+          "Vehicle entry is not available for vehicle no : ${outputController.text.toUpperCase()}",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 5),
+        );
+        paymentAmount.clear();
+        update(["ExitScreen"]);
+        return;
+      }
+
       currentVehicleData = entryData;
       currentVehicleDocId = activeEntriesSnapshot.docs.first.id;
 
@@ -195,6 +218,13 @@ class ExitController extends GetxController {
     await Permission.camera.request();
     outputController.clear();
     paymentAmount.clear();
+
+    // Get current admin ID
+    final currentAdminId = storage.read('userMasterID') ?? '';
+    if (currentAdminId.isEmpty) {
+      Get.snackbar("Error", "User ID not found. Please login again.");
+      return;
+    }
 
     try {
       final barcode = await BarcodeScanner.scan();
@@ -411,6 +441,25 @@ class ExitController extends GetxController {
       // Get admin ID
       final adminId = storage.read('userMasterID') ?? '';
       final organizationName = storage.read('organization') ?? '';
+
+      if (adminId.isEmpty) {
+        Get.snackbar("Error", "User ID not found. Please login again.");
+        isLoading.value = false;
+        return;
+      }
+
+      // Double-check that this admin is authorized to exit this vehicle
+      if (currentVehicleData['adminId'] != adminId) {
+        Get.snackbar(
+          "Unauthorized",
+          "You are not authorized to exit this vehicle. Only the admin who created the entry can process the exit.",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 5),
+        );
+        isLoading.value = false;
+        return;
+      }
 
       // Calculate parking charges
       final entryData = currentVehicleData;

@@ -56,7 +56,7 @@ class _FirstScreenState extends State<FirstScreen> {
           "Parking Management App",
           style: GoogleFonts.poppins(
             fontSize: 20.sp,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w400,
             color: Colors.white,
           ),
         ),

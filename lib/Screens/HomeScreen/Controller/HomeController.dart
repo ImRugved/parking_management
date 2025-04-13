@@ -43,7 +43,7 @@ class HomeController extends GetxController {
   void onInit() {
     super.onInit();
 
-    // First, fetch locations from Firebase
+    // Fetch locations from Firebase
     fetchLocations().then((_) {
       // Set the default location if locations are found
       if (locations.isNotEmpty) {
@@ -68,6 +68,29 @@ class HomeController extends GetxController {
 
     // Fetch companies data
     fetchCompanies();
+
+    // Safely handle the locations_updated event
+    try {
+      final locationsUpdatedFlag = Get.find<RxBool>(tag: 'locations_updated');
+      // Listen to changes on the "locations_updated" event
+      ever(locationsUpdatedFlag, (_) {
+        log("Locations updated event detected! Refreshing locations...");
+        fetchLocations();
+        getLocationList();
+      });
+    } catch (e) {
+      // If the event is not found, register our own
+      log("locations_updated event not found: ${e.toString()}");
+      final locationsUpdatedFlag = false.obs;
+      Get.put(locationsUpdatedFlag, tag: 'locations_updated');
+
+      // Set up the listener
+      ever(locationsUpdatedFlag, (_) {
+        log("Locations updated event detected! Refreshing locations...");
+        fetchLocations();
+        getLocationList();
+      });
+    }
   }
 
   @override
@@ -154,16 +177,33 @@ class HomeController extends GetxController {
     try {
       isLoading.value = true;
 
-      // Check if vehicle rates exist
-      final ratesCollection =
-          await _firestore.collection('vehicle_rates').get();
+      // Get the current admin ID
+      final storage = GetStorage();
+      final adminId = storage.read('userMasterID') ?? '';
+
+      if (adminId.isEmpty) {
+        Get.snackbar("Error", "User ID not found. Please login again.");
+        isLoading.value = false;
+        return;
+      }
+
+      // Check if vehicle rates exist for this admin
+      final ratesCollection = await _firestore
+          .collection('vehicle_rates')
+          .where('adminId', isEqualTo: adminId)
+          .get();
 
       if (ratesCollection.docs.isEmpty) {
         // Create default rates if none exist
         await _createDefaultRates();
       }
 
-      final rates = await _firestore.collection('vehicle_rates').get();
+      // Get rates for this admin only
+      final rates = await _firestore
+          .collection('vehicle_rates')
+          .where('adminId', isEqualTo: adminId)
+          .get();
+
       vehicleRates.value =
           rates.docs.map((doc) => GetVehicleRate.fromMap(doc.data())).toList();
 
@@ -181,15 +221,23 @@ class HomeController extends GetxController {
   }
 
   Future<void> _createDefaultRates() async {
-    // Get the organization ID
+    // Get the admin ID
     final storage = GetStorage();
-    final organizationId = storage.read('organization') ?? '';
+    final adminId = storage.read('userMasterID') ?? '';
+    final organization = storage.read('organization') ?? '';
+
+    if (adminId.isEmpty) {
+      Get.snackbar(
+          "Error", "Unable to create vehicle rates. User ID not found.");
+      return;
+    }
 
     // Create two-wheeler rates
     await _firestore.collection('vehicle_rates').add({
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
       'vehicleTypeId': '2 Wheeler',
-      'organizationId': organizationId,
+      'adminId': adminId,
+      'organization': organization,
       'hoursRate': '20',
       'everyHoursRate': '10',
       'hours24Rate': '200',
@@ -202,7 +250,8 @@ class HomeController extends GetxController {
     await _firestore.collection('vehicle_rates').add({
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
       'vehicleTypeId': '4 Wheeler',
-      'organizationId': organizationId,
+      'adminId': adminId,
+      'organization': organization,
       'hoursRate': '40',
       'everyHoursRate': '20',
       'hours24Rate': '400',
@@ -216,9 +265,22 @@ class HomeController extends GetxController {
     try {
       isOfficeLoading.value = true;
 
-      // Fetch locations from Firestore
-      final locations = await _firestore.collection('locations').get();
-      List<GetOfficeModel> locationList = locations.docs
+      // Get admin ID
+      final adminId = storage.read('userMasterID') ?? '';
+
+      if (adminId.isEmpty) {
+        Get.snackbar("Error", "User ID not found. Please login again.");
+        isOfficeLoading.value = false;
+        return;
+      }
+
+      // Fetch locations from Firestore, filtered by adminId
+      final locationsSnapshot = await _firestore
+          .collection('locations')
+          .where('adminId', isEqualTo: adminId)
+          .get();
+
+      List<GetOfficeModel> locationList = locationsSnapshot.docs
           .map((doc) => GetOfficeModel.fromMap(doc.data()))
           .toList();
 
@@ -570,20 +632,28 @@ class HomeController extends GetxController {
   Future<void> fetchLocations() async {
     try {
       isLoading.value = true;
-      final storage = GetStorage();
-      final organizationId = storage.read('organization') ?? '';
 
-      log("Fetching locations for organization: $organizationId");
+      // Get the current admin ID instead of organization
+      final adminId = storage.read('userMasterID') ?? '';
+
+      if (adminId.isEmpty) {
+        log("No admin ID found in storage");
+        locations.clear();
+        isLoading.value = false;
+        return;
+      }
+
+      log("Fetching locations for admin: $adminId");
 
       final querySnapshot = await FirebaseFirestore.instance
           .collection('locations')
-          .where('organizationId', isEqualTo: organizationId)
+          .where('adminId', isEqualTo: adminId)
           .get();
 
       log("Location query returned ${querySnapshot.docs.length} results");
 
       if (querySnapshot.docs.isEmpty) {
-        log("No locations found in the database for this organization");
+        log("No locations found in the database for this admin");
         locations.clear();
       } else {
         // Convert documents to ParkingLocation objects
@@ -629,12 +699,20 @@ class HomeController extends GetxController {
   Future<void> fetchCompanies() async {
     try {
       isLoading.value = true;
-      final storage = GetStorage();
-      final organizationId = storage.read('organization') ?? '';
+
+      // Get the current admin ID instead of organization
+      final adminId = storage.read('userMasterID') ?? '';
+
+      if (adminId.isEmpty) {
+        log("No admin ID found in storage");
+        companies.clear();
+        isLoading.value = false;
+        return;
+      }
 
       final querySnapshot = await FirebaseFirestore.instance
           .collection('companies')
-          .where('organizationId', isEqualTo: organizationId)
+          .where('adminId', isEqualTo: adminId)
           .get();
 
       companies.value =
@@ -650,5 +728,12 @@ class HomeController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  // Method to refresh locations after changes in admin dashboard
+  void refreshLocations() {
+    fetchLocations();
+    getLocationList();
+    update(["locations", "homeScreen"]);
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:aditya_birla/Models/location_model.dart';
+import 'dart:developer';
 
 class LocationController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -11,9 +12,24 @@ class LocationController extends GetxController {
   final RxString selectedLocation = ''.obs;
   final TextEditingController locationNameController = TextEditingController();
 
+  // Flag to notify other screens when locations are updated
+  final RxBool locationsUpdated = false.obs;
+
   @override
   void onInit() {
     super.onInit();
+
+    // Safely register the locations_updated event
+    try {
+      // Check if it's already registered
+      Get.find<RxBool>(tag: 'locations_updated');
+      log("locations_updated event already registered");
+    } catch (e) {
+      // Register it if not found
+      log("Registering locations_updated event");
+      Get.put(locationsUpdated, tag: 'locations_updated');
+    }
+
     fetchLocations();
   }
 
@@ -25,17 +41,28 @@ class LocationController extends GetxController {
 
   Future<void> fetchLocations() async {
     try {
-      final String organizationId = _storage.read('organization') ?? '';
+      final String adminId = _storage.read('userMasterID') ?? '';
+
+      if (adminId.isEmpty) {
+        Get.snackbar("Error", "User ID not found. Please login again.");
+        return;
+      }
+
+      log("Fetching locations for admin: $adminId");
 
       final QuerySnapshot snapshot = await _firestore
           .collection('locations')
-          .where('organizationId', isEqualTo: organizationId)
+          .where('adminId', isEqualTo: adminId)
           .get();
+
+      log("Location query returned ${snapshot.docs.length} results");
 
       locations.value = snapshot.docs
           .map((doc) =>
               ParkingLocation.fromMap(doc.data() as Map<String, dynamic>))
           .toList();
+
+      log("Loaded ${locations.length} locations");
     } catch (e) {
       Get.snackbar(
         "Error",
@@ -48,13 +75,23 @@ class LocationController extends GetxController {
 
   Future<void> addLocation(String name) async {
     try {
-      final String organizationId = _storage.read('organization') ?? '';
+      final String adminId = _storage.read('userMasterID') ?? '';
+      final String organization = _storage.read('organization') ?? '';
+
+      if (adminId.isEmpty) {
+        Get.snackbar("Error", "User ID not found. Please login again.");
+        return;
+      }
+
       final String id = _firestore.collection('locations').doc().id;
+
+      log("Adding location: $name for admin: $adminId");
 
       final ParkingLocation location = ParkingLocation(
         id: id,
         name: name,
-        organizationId: organizationId,
+        organizationId: organization,
+        adminId: adminId,
         createdAt: DateTime.now().toIso8601String(),
         updatedAt: DateTime.now().toIso8601String(),
       );
@@ -63,6 +100,9 @@ class LocationController extends GetxController {
 
       locations.add(location);
       locationNameController.clear();
+
+      // Signal that locations were updated
+      locationsUpdated.toggle();
 
       Get.snackbar(
         "Success",
@@ -84,6 +124,9 @@ class LocationController extends GetxController {
     try {
       await _firestore.collection('locations').doc(id).delete();
       locations.removeWhere((location) => location.id == id);
+
+      // Signal that locations were updated
+      locationsUpdated.toggle();
 
       Get.snackbar(
         "Success",
