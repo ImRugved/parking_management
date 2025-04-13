@@ -28,10 +28,19 @@ class LoginPageScreen extends GetView<LoginController> {
                 children: [
                   Gap(35.h),
                   Center(
-                    child: Image.asset(
-                      "assets/images/icon.png",
-                      height: 100.h,
-                      width: 140.w,
+                    child: Container(
+                      height: 120.h,
+                      width: 135.w,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: ConstColors.white,
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          "assets/images/icon.png",
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
                   ),
                   Gap(25.h),
@@ -64,8 +73,8 @@ class LoginPageScreen extends GetView<LoginController> {
                     },
                     inputFormatters: const [],
                     onChanged: (value) {
-                      // controller.userId.text = value;
-                      // controller.update(["homeScreen"]);
+                      //  controller.userId.text = value;
+                      controller.update(["homeScreen"]);
                     },
                     onSaved: (value) {
                       controller.userId.text = value!;
@@ -106,7 +115,7 @@ class LoginPageScreen extends GetView<LoginController> {
                     readOnly: false,
                     onChanged: (value) {
                       // controller.password.text = value;
-                      // controller.update(["homeScreen"]);
+                      controller.update(["homeScreen"]);
                     },
                     onSaved: (value) {
                       controller.password.text = value!;
@@ -118,7 +127,14 @@ class LoginPageScreen extends GetView<LoginController> {
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {
-                        Get.toNamed("/forgot_password");
+                        // Get.toNamed("/forgot_password");
+                        Get.snackbar(
+                          "User Alert",
+                          "Please contact the admin to reset password",
+                          backgroundColor: Colors.green,
+                          colorText: Colors.white,
+                          duration: Duration(seconds: 3),
+                        );
                       },
                       child: Text(
                         "Forgot Password?",

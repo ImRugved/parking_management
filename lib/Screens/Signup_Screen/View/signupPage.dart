@@ -28,10 +28,19 @@ class SignUpPageScreen extends GetView<LoginController> {
                 children: [
                   Gap(35.h),
                   Center(
-                    child: Image.asset(
-                      "assets/images/ablogo.png",
+                    child: Container(
                       height: 100.h,
-                      width: 140.w,
+                      width: 115.w,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: ConstColors.white,
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          "assets/images/icon.png",
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
                   ),
                   Center(
@@ -71,7 +80,11 @@ class SignUpPageScreen extends GetView<LoginController> {
                     },
                     inputFormatters: const [],
                     onChanged: (value) {
-                      controller.nameController.text = value;
+                      //  controller.nameController.text = value;
+                      controller.update(["signupScreen"]);
+                    },
+                    onSaved: (value) {
+                      controller.nameController.text = value!;
                       controller.update(["signupScreen"]);
                     },
                   ),
@@ -92,7 +105,11 @@ class SignUpPageScreen extends GetView<LoginController> {
                     },
                     inputFormatters: const [],
                     onChanged: (value) {
-                      controller.userId.text = value;
+                      // controller.userId.text = value;
+                      controller.update(["signupScreen"]);
+                    },
+                    onSaved: (value) {
+                      controller.userId.text = value!;
                       controller.update(["signupScreen"]);
                     },
                   ),
@@ -130,7 +147,7 @@ class SignUpPageScreen extends GetView<LoginController> {
                     ],
                     readOnly: false,
                     onChanged: (value) {
-                      controller.password.text = value;
+                      //   controller.password.text = value;
                       controller.update(["signupScreen"]);
                     },
                     onSaved: (value) {
@@ -152,7 +169,11 @@ class SignUpPageScreen extends GetView<LoginController> {
                     },
                     inputFormatters: const [],
                     onChanged: (value) {
-                      controller.organizationController.text = value;
+                      //  controller.organizationController.text = value;
+                      controller.update(["signupScreen"]);
+                    },
+                    onSaved: (value) {
+                      controller.organizationController.text = value!;
                       controller.update(["signupScreen"]);
                     },
                   ),
@@ -165,7 +186,11 @@ class SignUpPageScreen extends GetView<LoginController> {
                     validator: null,
                     inputFormatters: const [],
                     onChanged: (value) {
-                      controller.adminCodeController.text = value;
+                      //  controller.adminCodeController.text = value;
+                      controller.update(["signupScreen"]);
+                    },
+                    onSaved: (value) {
+                      controller.adminCodeController.text = value!;
                       controller.update(["signupScreen"]);
                     },
                   ),

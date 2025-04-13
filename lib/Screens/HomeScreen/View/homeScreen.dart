@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:aditya_birla/Constant/const_colors.dart';
 import 'package:aditya_birla/Constant/constumDropDown.dart';
 import 'package:aditya_birla/Constant/custom_textstyle.dart';
@@ -21,6 +23,7 @@ class HomeScreen extends GetView<HomeController> {
         init: HomeController(),
         id: "homeScreen",
         builder: (_) {
+          log("selected vehicle is ${_.selectedVehicle.value}");
           return Scaffold(
             appBar: PreferredSize(
               preferredSize: Size(Get.width, 65.h),

@@ -98,7 +98,7 @@ class HomeController extends GetxController {
     timer?.cancel();
     vehicleNo.clear();
     customLocationController.dispose();
-    selectedVehicle.value = 0;
+    selectedVehicle.value = 1;
     locationType = null;
     super.dispose();
   }
@@ -319,6 +319,17 @@ class HomeController extends GetxController {
         Get.snackbar(
           "Error",
           "Please select a valid location or enter a custom location",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        isPdfLoading.value = false;
+        update(['homeScreen']);
+        return;
+      }
+      if (selectedVehicle.value == 1) {
+        Get.snackbar(
+          "Error",
+          "Please select a vehicle type",
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
