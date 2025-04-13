@@ -23,6 +23,7 @@ import 'package:aditya_birla/Screens/Signup_Screen/Binding/signupBinding.dart';
 import 'package:aditya_birla/Screens/Signup_Screen/View/signupPage.dart';
 import 'package:aditya_birla/Screens/Splash_Screen/splashScreen.dart';
 import 'package:aditya_birla/Screens/Master_First_Screen/master_first_screen.dart';
+import 'package:aditya_birla/Screens/Master_First_Screen/Controller/masterBinding.dart';
 import 'package:aditya_birla/Screens/Admin_First_Screen/admin_first_screen.dart';
 import 'package:get/get.dart';
 
@@ -39,7 +40,9 @@ class Routes {
 
     //Master First Screen
     GetPage(
-        name: '/master_first_screen', page: () => const MasterFirstScreen()),
+        name: '/master_first_screen',
+        page: () => const MasterFirstScreen(),
+        binding: MasterBinding()),
 
     //Admin First Screen
     GetPage(name: '/admin_first_screen', page: () => const AdminFirstScreen()),

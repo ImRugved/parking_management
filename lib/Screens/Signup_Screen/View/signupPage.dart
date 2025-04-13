@@ -133,6 +133,10 @@ class SignUpPageScreen extends GetView<LoginController> {
                       controller.password.text = value;
                       controller.update(["signupScreen"]);
                     },
+                    onSaved: (value) {
+                      controller.password.text = value!;
+                      controller.update(["signupScreen"]);
+                    },
                   ),
                   Gap(20.h),
                   CustomTextFormField(

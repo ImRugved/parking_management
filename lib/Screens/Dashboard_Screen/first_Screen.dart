@@ -156,7 +156,7 @@ class FirstScreen extends StatelessWidget {
                 ),
               ),
               TextSpan(
-                text: 'DAccess Security Systems Pvt. Ltd.',
+                text: 'Rugved Belkundkar.',
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
                   color: ConstColors.green,

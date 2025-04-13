@@ -6,229 +6,250 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
 import '../../Screens/Login_Screen/Controller/loginController.dart';
+import '../../Constant/const_colors.dart';
+import 'Controller/masterController.dart';
 
-class MasterFirstScreen extends StatefulWidget {
+class MasterFirstScreen extends StatelessWidget {
   const MasterFirstScreen({Key? key}) : super(key: key);
 
   @override
-  State<MasterFirstScreen> createState() => _MasterFirstScreenState();
-}
-
-class _MasterFirstScreenState extends State<MasterFirstScreen>
-    with SingleTickerProviderStateMixin {
-  final LoginController _loginController = Get.put(LoginController());
-  final GetStorage _storage = GetStorage();
-  late TabController _tabController;
-  int _currentIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-            _currentIndex == 0 ? 'Master Dashboard' : 'Vehicle Entry/Exit'),
-        bottom: _currentIndex == 0
-            ? TabBar(
-                controller: _tabController,
-                tabs: const [
-                  Tab(text: 'Create Admin', icon: Icon(Icons.person_add)),
-                  Tab(text: 'Manage Users', icon: Icon(Icons.people)),
-                ],
-              )
-            : null,
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor,
+    return GetBuilder<MasterController>(
+      init: MasterController(),
+      builder: (controller) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              'Master Dashboard',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                fontSize: 18.sp,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+            backgroundColor: Colors.white,
+            actions: [
+              IconButton(
+                onPressed: () {
+                  controller.signOut();
+                },
+                icon: Icon(
+                  Icons.logout,
+                  color: Colors.red,
+                  size: 25.sp,
+                ),
+              ),
+            ],
+          ),
+          body: GetBuilder<MasterController>(
+            id: 'master_dashboard',
+            builder: (_) {
+              return Column(
                 children: [
-                  const Text(
-                    'Master Dashboard',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Name: ${_storage.read('name') ?? 'Unknown'}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Text(
-                    'Organization: ${_storage.read('organization') ?? 'Unknown'}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
+                  _buildNavigation(controller),
+                  Expanded(
+                    child: _buildCurrentView(controller),
                   ),
                 ],
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNavigation(MasterController controller) {
+    return Container(
+      color: Colors.grey[100],
+      padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 16.w),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _navButton(
+              'Manage Users',
+              Icons.people,
+              controller.currentView.value == 'manage_users',
+              () => controller.changeView('manage_users'),
+            ),
+            SizedBox(width: 8.w),
+            _navButton(
+              'Create Admin',
+              Icons.person_add,
+              controller.currentView.value == 'create_admin',
+              () => controller.changeView('create_admin'),
+            ),
+            if (controller.currentView.value == 'vehicle_data') ...[
+              SizedBox(width: 8.w),
+              _navButton(
+                'Back',
+                Icons.arrow_back,
+                false,
+                () => controller.changeView('manage_users'),
               ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _navButton(
+      String title, IconData icon, bool isActive, Function() onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+        decoration: BoxDecoration(
+          color: isActive ? ConstColors.green : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isActive ? ConstColors.green : Colors.grey[400]!,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isActive ? Colors.white : Colors.grey[700],
+              size: 16.sp,
             ),
-            ListTile(
-              leading: const Icon(Icons.dashboard),
-              title: const Text('Master Dashboard'),
-              selected: _currentIndex == 0,
-              onTap: () {
-                setState(() {
-                  _currentIndex = 0;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.directions_car),
-              title: const Text('Vehicle Entry/Exit'),
-              selected: _currentIndex == 1,
-              onTap: () {
-                setState(() {
-                  _currentIndex = 1;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Settings'),
-              onTap: () {
-                Navigator.pop(context);
-                // Navigate to settings page
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Logout'),
-              onTap: () {
-                _loginController.signOut();
-              },
+            SizedBox(width: 4.w),
+            Text(
+              title,
+              style: GoogleFonts.poppins(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w500,
+                color: isActive ? Colors.white : Colors.grey[700],
+              ),
             ),
           ],
         ),
       ),
-      body: _currentIndex == 0
-          ? TabBarView(
-              controller: _tabController,
-              children: [
-                _buildCreateAdminTab(),
-                _buildManageUsersTab(),
-              ],
-            )
-          : _buildVehicleEntryExitScreen(),
     );
   }
 
-  Widget _buildCreateAdminTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Create New Admin Account',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 20),
-          TextField(
-            controller: _loginController.nameController,
-            decoration: const InputDecoration(
-              labelText: 'Full Name',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.person),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _loginController.userId,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.email),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Obx(
-            () => TextField(
-              controller: _loginController.password,
-              obscureText: !_loginController.isVisible.value,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.lock),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _loginController.isVisible.value
-                        ? Icons.visibility
-                        : Icons.visibility_off,
-                  ),
-                  onPressed: () {
-                    _loginController.isVisible.value =
-                        !_loginController.isVisible.value;
-                  },
+  Widget _buildCurrentView(MasterController controller) {
+    switch (controller.currentView.value) {
+      case 'create_admin':
+        return _buildCreateAdminForm(controller);
+      case 'vehicle_data':
+        return _buildVehicleDataView(controller);
+      case 'manage_users':
+      default:
+        return _buildManageUsersView(controller);
+    }
+  }
+
+  Widget _buildCreateAdminForm(MasterController controller) {
+    return GetBuilder<MasterController>(
+      id: 'create_admin_form',
+      builder: (_) {
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(16.sp),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Create New Admin Account',
+                style: GoogleFonts.poppins(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _loginController.organizationController,
-            decoration: const InputDecoration(
-              labelText: 'Organization Name',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.business),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Obx(
-            () => SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _loginController.isLoading.value
-                    ? null
-                    : () {
-                        _loginController.createAdminUser();
-                      },
-                child: _loginController.isLoading.value
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Create Admin Account',
-                        style: TextStyle(fontSize: 16),
-                      ),
+              SizedBox(height: 20.h),
+              _buildTextField(
+                controller: controller.nameController,
+                label: 'Full Name',
+                icon: Icons.person,
               ),
-            ),
+              SizedBox(height: 16.h),
+              _buildTextField(
+                controller: controller.emailController,
+                label: 'Email',
+                icon: Icons.email,
+                keyboardType: TextInputType.emailAddress,
+              ),
+              SizedBox(height: 16.h),
+              _buildPasswordField(controller),
+              SizedBox(height: 16.h),
+              _buildTextField(
+                controller: controller.organizationController,
+                label: 'Organization Name',
+                icon: Icons.business,
+              ),
+              SizedBox(height: 24.h),
+              SizedBox(
+                width: double.infinity,
+                height: 50.h,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ConstColors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: controller.isLoading.value
+                      ? null
+                      : () {
+                          controller.createAdminUser();
+                        },
+                  child: controller.isLoading.value
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                          'Create Admin Account',
+                          style: GoogleFonts.poppins(fontSize: 16.sp),
+                        ),
+                ),
+              ),
+            ],
           ),
-        ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+        prefixIcon: Icon(icon),
       ),
     );
   }
 
-  Widget _buildManageUsersTab() {
+  Widget _buildPasswordField(MasterController controller) {
+    return TextField(
+      controller: controller.passwordController,
+      obscureText: !controller.isVisible.value,
+      decoration: InputDecoration(
+        labelText: 'Password',
+        border: const OutlineInputBorder(),
+        prefixIcon: const Icon(Icons.lock),
+        suffixIcon: IconButton(
+          icon: Icon(
+            controller.isVisible.value
+                ? Icons.visibility
+                : Icons.visibility_off,
+          ),
+          onPressed: () {
+            controller.togglePasswordVisibility();
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildManageUsersView(MasterController controller) {
     return StreamBuilder<QuerySnapshot>(
-      stream: _loginController.getAllOrganizations(),
+      stream: controller.getAllOrganizations(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -239,51 +260,158 @@ class _MasterFirstScreenState extends State<MasterFirstScreen>
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('No organizations found'));
+          return Center(
+            child: Text(
+              'No organizations found',
+              style: GoogleFonts.poppins(fontSize: 16.sp),
+            ),
+          );
         }
 
         final organizations = snapshot.data!.docs;
 
         return ListView.builder(
+          padding: EdgeInsets.all(16.sp),
           itemCount: organizations.length,
           itemBuilder: (context, index) {
             final organization =
                 organizations[index].data() as Map<String, dynamic>;
-            final userId = organizations[index].id;
-            final name = organization['name'] ?? 'Unknown';
-            final email = organization['email'] ?? 'No email';
-            final role = organization['role'] ?? 'user';
-            final status = organization['status'] ?? 'inactive';
-
-            // Skip self (master user) in the list
-            if (role == 'master' && userId == _storage.read('authToken')) {
-              return const SizedBox.shrink();
-            }
+            final orgId = organizations[index].id;
+            final orgName = organization['name'] ?? 'Unknown';
+            final orgStatus = organization['status'] ?? 'inactive';
+            final orgEmail = organization['email'] ?? 'No email';
 
             return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListTile(
-                title: Text(name),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              elevation: 2,
+              margin: EdgeInsets.only(bottom: 16.h),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: orgStatus == 'active'
+                        ? ConstColors.green.withOpacity(0.3)
+                        : Colors.red.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                ),
+                child: ExpansionTile(
+                  tilePadding:
+                      EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                  title: Text(
+                    orgName,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16.sp,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: 4.h),
+                      Text(
+                        orgEmail,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14.sp,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8.w,
+                              vertical: 2.h,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: orgStatus == 'active'
+                                  ? ConstColors.green.withOpacity(0.1)
+                                  : Colors.red.withOpacity(0.1),
+                            ),
+                            child: Text(
+                              orgStatus == 'active' ? 'Active' : 'Inactive',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12.sp,
+                                color: orgStatus == 'active'
+                                    ? ConstColors.green
+                                    : Colors.red,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  leading: CircleAvatar(
+                    backgroundColor: orgStatus == 'active'
+                        ? ConstColors.green.withOpacity(0.2)
+                        : Colors.red.withOpacity(0.2),
+                    child: Icon(
+                      Icons.business,
+                      color: orgStatus == 'active'
+                          ? ConstColors.green
+                          : Colors.red,
+                    ),
+                  ),
                   children: [
-                    Text('Email: $email'),
-                    Text('Role: $role'),
-                    Text(
-                      'Status: $status',
-                      style: TextStyle(
-                        color: status == 'active' ? Colors.green : Colors.red,
-                        fontWeight: FontWeight.bold,
+                    Padding(
+                      padding: EdgeInsets.all(16.sp),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Status:',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              GetBuilder<MasterController>(
+                                id: 'manage_users',
+                                builder: (_) {
+                                  return Switch(
+                                    value: orgStatus == 'active',
+                                    activeColor: ConstColors.green,
+                                    onChanged: controller.isLoading.value
+                                        ? null
+                                        : (value) {
+                                            controller.toggleUserStatus(
+                                                orgId, value);
+                                          },
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          Divider(height: 20.h),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ConstColors.green,
+                              foregroundColor: Colors.white,
+                              elevation: 2,
+                              padding: EdgeInsets.symmetric(
+                                vertical: 12.h,
+                                horizontal: 16.w,
+                              ),
+                            ),
+                            onPressed: () {
+                              controller.viewOrganizationData(orgId, orgName);
+                            },
+                            icon: const Icon(Icons.visibility),
+                            label: Text(
+                              'View Vehicle Data',
+                              style: GoogleFonts.poppins(),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
-                ),
-                trailing: Switch(
-                  value: status == 'active',
-                  activeColor: Colors.green,
-                  onChanged: (value) {
-                    _loginController.toggleUserStatus(userId, value);
-                  },
                 ),
               ),
             );
@@ -293,131 +421,739 @@ class _MasterFirstScreenState extends State<MasterFirstScreen>
     );
   }
 
-  Widget _buildVehicleEntryExitScreen() {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          Container(
-            height: 0.2.sh,
-            width: 1.sw,
-            decoration: const BoxDecoration(
-              color: Colors.blue,
+  Widget _buildVehicleDataView(MasterController controller) {
+    return GetBuilder<MasterController>(
+      id: 'vehicle_data',
+      builder: (_) {
+        return Column(
+          children: [
+            // Organization info header
+            Container(
+              width: double.infinity,
+              color: Colors.grey[100],
+              padding: EdgeInsets.all(16.sp),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.business, color: ConstColors.green),
+                      SizedBox(width: 10.w),
+                      Expanded(
+                        child: Text(
+                          '${controller.selectedOrganizationName.value}',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16.sp,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16.h),
+                  // Date Range Filter
+                  if (controller.showVehicleEntries.value) ...[
+                    _buildDateFilter(controller),
+                    SizedBox(height: 16.h),
+                  ],
+                  // Tab selection
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => controller.toggleVehicleDataView(true),
+                          child: Container(
+                            padding: EdgeInsets.symmetric(vertical: 12.h),
+                            decoration: BoxDecoration(
+                              color: controller.showVehicleEntries.value
+                                  ? ConstColors.green
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: controller.showVehicleEntries.value
+                                    ? ConstColors.green
+                                    : Colors.grey[400]!,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'Vehicle Entries',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w500,
+                                  color: controller.showVehicleEntries.value
+                                      ? Colors.white
+                                      : Colors.grey[700],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 10.w),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => controller.toggleVehicleDataView(false),
+                          child: Container(
+                            padding: EdgeInsets.symmetric(vertical: 12.h),
+                            decoration: BoxDecoration(
+                              color: !controller.showVehicleEntries.value
+                                  ? ConstColors.green
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: !controller.showVehicleEntries.value
+                                    ? ConstColors.green
+                                    : Colors.grey[400]!,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'Parking Rates',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w500,
+                                  color: !controller.showVehicleEntries.value
+                                      ? Colors.white
+                                      : Colors.grey[700],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
+
+            // Content area
+            Expanded(
+              child: controller.showVehicleEntries.value
+                  ? _buildVehicleEntriesTab(controller)
+                  : _buildVehicleRatesTab(controller),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Date filter widget
+  Widget _buildDateFilter(MasterController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.date_range, color: ConstColors.green, size: 18.sp),
+            SizedBox(width: 8.w),
+            Text(
+              'Filter by Date Range',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                fontSize: 14.sp,
+                color: Colors.grey[800],
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 10.h),
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: () async {
+                  final selectedDate = await showDatePicker(
+                    context: Get.context!,
+                    initialDate: controller.fromDate.value,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime.now(),
+                    builder: (context, child) {
+                      return Theme(
+                        data: ThemeData.light().copyWith(
+                          colorScheme: ColorScheme.light(
+                            primary: ConstColors.green,
+                          ),
+                        ),
+                        child: child!,
+                      );
+                    },
+                  );
+                  if (selectedDate != null) {
+                    controller.setDateRange(
+                      selectedDate,
+                      controller.toDate.value,
+                    );
+                  }
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 8.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey[400]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 14.sp,
+                        color: Colors.grey[700],
+                      ),
+                      SizedBox(width: 4.w),
+                      Flexible(
+                        child: Text(
+                          'From: ${controller.formatDateOnly(controller.fromDate.value)}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12.sp,
+                            color: Colors.grey[700],
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: InkWell(
+                onTap: () async {
+                  final selectedDate = await showDatePicker(
+                    context: Get.context!,
+                    initialDate: controller.toDate.value,
+                    firstDate: controller.fromDate.value,
+                    lastDate: DateTime.now(),
+                    builder: (context, child) {
+                      return Theme(
+                        data: ThemeData.light().copyWith(
+                          colorScheme: ColorScheme.light(
+                            primary: ConstColors.green,
+                          ),
+                        ),
+                        child: child!,
+                      );
+                    },
+                  );
+                  if (selectedDate != null) {
+                    controller.setDateRange(
+                      controller.fromDate.value,
+                      selectedDate,
+                    );
+                  }
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 8.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey[400]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 14.sp,
+                        color: Colors.grey[700],
+                      ),
+                      SizedBox(width: 4.w),
+                      Flexible(
+                        child: Text(
+                          'To: ${controller.formatDateOnly(controller.toDate.value)}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12.sp,
+                            color: Colors.grey[700],
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 10.h),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            TextButton.icon(
+              onPressed: () {
+                controller.resetDateFilter();
+              },
+              icon: Icon(
+                Icons.refresh,
+                size: 16.sp,
+                color: controller.useCustomDateRange.value
+                    ? ConstColors.green
+                    : Colors.grey[400],
+              ),
+              label: Text(
+                'Reset Filter',
+                style: GoogleFonts.poppins(
+                  fontSize: 12.sp,
+                  color: controller.useCustomDateRange.value
+                      ? ConstColors.green
+                      : Colors.grey[400],
+                ),
+              ),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVehicleEntriesTab(MasterController controller) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: controller.getVehicleEntries(),
+      builder: (context, snapshot) {
+        // Don't call controller methods during build
+
+        // Use Obx for reactive UI components
+        return Obx(() {
+          // Show loading indicator
+          if (controller.isLoadingVehicleEntries.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          // Show custom message for no data in date range
+          if (controller.noDataForDateRange.value) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.date_range_outlined,
+                    size: 72.sp,
+                    color: Colors.grey[400],
+                  ),
+                  SizedBox(height: 16.h),
+                  Text(
+                    'No data available for the selected date range',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16.sp,
+                      color: Colors.grey[700],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 8.h),
+                  TextButton.icon(
+                    onPressed: () {
+                      controller.resetDateFilter();
+                    },
+                    icon: Icon(
+                      Icons.refresh,
+                      size: 16.sp,
+                      color: ConstColors.green,
+                    ),
+                    label: Text(
+                      'Reset Date Filter',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14.sp,
+                        color: ConstColors.green,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Show error message if one is set
+          if (controller.vehicleQueryErrorMessage.value.isNotEmpty) {
+            return Center(
+              child: Text(
+                controller.vehicleQueryErrorMessage.value,
+                style: GoogleFonts.poppins(
+                  fontSize: 16.sp,
+                  color: Colors.red[700],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            );
+          }
+
+          // Show message when no data is available
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.no_crash_outlined,
+                    size: 72.sp,
+                    color: Colors.grey[400],
+                  ),
+                  SizedBox(height: 16.h),
+                  Text(
+                    'No vehicle entries found for this organization',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16.sp,
+                      color: Colors.grey[700],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final entries = snapshot.data!.docs;
+          entries.sort((a, b) {
+            final aData = a.data() as Map<String, dynamic>;
+            final bData = b.data() as Map<String, dynamic>;
+
+            // Get entry time with fallback options for different field formats
+            final aEntryTime = _getDateTimeFromEntry(aData);
+            final bEntryTime = _getDateTimeFromEntry(bData);
+
+            return bEntryTime.compareTo(aEntryTime); // Newer entries first
+          });
+
+          return ListView.builder(
+            padding: EdgeInsets.all(16.sp),
+            itemCount: entries.length,
+            itemBuilder: (context, index) {
+              final entry = entries[index].data() as Map<String, dynamic>;
+
+              // Get vehicle number with fallbacks
+              final vehicleNo =
+                  entry['vehicleNo'] ?? entry['vehicleNumber'] ?? 'Unknown';
+
+              // Get vehicle type with fallbacks
+              final vehicleType =
+                  entry['vehicleType'] ?? entry['vehicleTypeId'] ?? 'Unknown';
+
+              // Get entry time
+              final entryTime = _getDateTimeFromEntry(entry);
+
+              // Get exit time if available
+              final exitTime = entry['exitTime'] != null
+                  ? DateTime.parse(entry['exitTime'].toString())
+                  : (entry['status'] == 'completed' ? DateTime.now() : null);
+
+              // Get amount paid
+              final amount = entry['amount'] ?? entry['charges'] ?? '0';
+
+              // Get location with fallbacks
+              final location =
+                  entry['locationName'] ?? entry['location'] ?? 'Unknown';
+
+              // Determine status
+              final status = entry['status'] == 'completed' || exitTime != null
+                  ? 'Exited'
+                  : 'Parked';
+
+              return Card(
+                elevation: 2,
+                margin: EdgeInsets.only(bottom: 12.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(
+                    color: status == 'Exited'
+                        ? Colors.grey[300]!
+                        : ConstColors.green.withOpacity(0.5),
+                    width: 1.5,
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(16.sp),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                vehicleType.toString().contains('2') ||
+                                        vehicleType
+                                            .toString()
+                                            .toLowerCase()
+                                            .contains('bike')
+                                    ? Icons.two_wheeler
+                                    : Icons.directions_car,
+                                color: ConstColors.green,
+                                size: 24.sp,
+                              ),
+                              SizedBox(width: 10.w),
+                              Text(
+                                vehicleNo,
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 18.sp,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 10.w,
+                              vertical: 4.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: status == 'Exited'
+                                  ? Colors.grey[200]
+                                  : ConstColors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              status,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                                color: status == 'Exited'
+                                    ? Colors.grey[700]
+                                    : ConstColors.green,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Divider(height: 24.h),
+                      _infoRow('Vehicle Type', vehicleType),
+                      SizedBox(height: 6.h),
+                      _infoRow('Location', location),
+                      SizedBox(height: 6.h),
+                      _infoRow(
+                          'Entry Time', controller.formatDateTime(entryTime)),
+                      if (exitTime != null) ...[
+                        SizedBox(height: 6.h),
+                        _infoRow(
+                            'Exit Time', controller.formatDateTime(exitTime)),
+                        SizedBox(height: 6.h),
+                        _infoRow('Amount Paid', '₹$amount'),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        });
+      },
+    );
+  }
+
+  // Helper method to extract date time from entry with fallbacks
+  DateTime _getDateTimeFromEntry(Map<String, dynamic> entry) {
+    if (entry['entryTime'] != null) {
+      try {
+        return DateTime.parse(entry['entryTime'].toString());
+      } catch (e) {
+        // Continue to fallbacks
+      }
+    }
+
+    if (entry['createdAt'] != null) {
+      try {
+        return DateTime.parse(entry['createdAt'].toString());
+      } catch (e) {
+        // Continue to fallbacks
+      }
+    }
+
+    return DateTime.now(); // Default fallback
+  }
+
+  Widget _buildVehicleRatesTab(MasterController controller) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: controller.getVehicleRates(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  "Welcome to",
-                  style: GoogleFonts.poppins(
-                    fontSize: 20.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
+                Icon(
+                  Icons.money_off,
+                  size: 72.sp,
+                  color: Colors.grey[400],
                 ),
+                SizedBox(height: 16.h),
                 Text(
-                  "Parking Management App",
+                  'No vehicle rates defined for this organization',
                   style: GoogleFonts.poppins(
-                    fontSize: 20.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    fontSize: 16.sp,
+                    color: Colors.grey[700],
                   ),
-                ),
-                Gap(10.h),
-                Text(
-                  "Powered by Rugved Belkundkar",
-                  style: GoogleFonts.poppins(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.white,
-                  ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
-          ),
-          Container(
-            height: 0.7.sh,
-            width: 1.sw,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(30),
-                topRight: Radius.circular(30),
+          );
+        }
+
+        final rates = snapshot.data!.docs;
+
+        return ListView.builder(
+          padding: EdgeInsets.all(16.sp),
+          itemCount: rates.length,
+          itemBuilder: (context, index) {
+            final rate = rates[index].data() as Map<String, dynamic>;
+
+            // Get vehicle type with fallbacks
+            final vehicleType = rate['vehicleTypeId'] ?? 'Unknown';
+
+            // Get rate values with fallbacks
+            final firstHourRate = rate['hoursRate'] ??
+                rate['amountFor2'] ??
+                rate['firstHoursRate'] ??
+                '0';
+            final additionalHourRate = rate['everyHoursRate'] ??
+                rate['amountAfter2'] ??
+                rate['additionalHourRate'] ??
+                '0';
+            final dayRate = rate['hours24Rate'] ?? rate['dayRate'] ?? '0';
+
+            return Card(
+              elevation: 3,
+              margin: EdgeInsets.only(bottom: 16.h),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-            ),
-            child: Column(
-              children: [
-                Gap(20.h),
-                Text(
-                  "Vehicle Entry/Exit",
-                  style: GoogleFonts.poppins(
-                    fontSize: 20.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.blue,
+              child: Container(
+                padding: EdgeInsets.all(16.sp),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white,
+                      Colors.grey[100]!,
+                    ],
                   ),
                 ),
-                Gap(20.h),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GestureDetector(
-                      onTap: () {
-                        // Get.toNamed('/carScreen');
-                      },
-                      child: Container(
-                        height: 0.25.sh,
-                        width: 0.4.sw,
-                        decoration: BoxDecoration(
-                          color: Colors.blue,
-                          borderRadius: BorderRadius.circular(10),
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: ConstColors.green.withOpacity(0.1),
+                          radius: 24.r,
+                          child: Icon(
+                            vehicleType.toString().contains('2') ||
+                                    vehicleType
+                                        .toString()
+                                        .toLowerCase()
+                                        .contains('bike')
+                                ? Icons.two_wheeler
+                                : Icons.directions_car,
+                            color: ConstColors.green,
+                            size: 24.sp,
+                          ),
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "Entry",
-                              style: GoogleFonts.poppins(
-                                fontSize: 20.sp,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
+                        SizedBox(width: 16.w),
+                        Text(
+                          vehicleType,
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 20.sp,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                    GestureDetector(
-                      onTap: () {
-                        // Get.toNamed('/bikeScreen');
-                      },
-                      child: Container(
-                        height: 0.25.sh,
-                        width: 0.4.sw,
-                        decoration: BoxDecoration(
-                          color: Colors.blue,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "Exit",
-                              style: GoogleFonts.poppins(
-                                fontSize: 20.sp,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    Divider(height: 24.h),
+                    _buildRateRow('First 2 Hours', '₹$firstHourRate'),
+                    SizedBox(height: 12.h),
+                    _buildRateRow(
+                        'Every Additional Hour', '₹$additionalHourRate'),
+                    SizedBox(height: 12.h),
+                    _buildRateRow('24-Hour Rate', '₹$dayRate'),
                   ],
                 ),
-              ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 14.sp,
+              color: Colors.grey[700],
             ),
           ),
-        ],
-      ),
+        ),
+        Expanded(
+          flex: 3,
+          child: Text(
+            value,
+            style: GoogleFonts.poppins(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRateRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 16.sp,
+            color: Colors.grey[700],
+          ),
+        ),
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: 16.w,
+            vertical: 6.h,
+          ),
+          decoration: BoxDecoration(
+            color: ConstColors.green.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: ConstColors.green.withOpacity(0.3),
+            ),
+          ),
+          child: Text(
+            value,
+            style: GoogleFonts.poppins(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w600,
+              color: ConstColors.green,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
