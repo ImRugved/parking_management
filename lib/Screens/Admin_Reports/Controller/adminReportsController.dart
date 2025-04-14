@@ -28,6 +28,16 @@ class AdminReportsController extends GetxController {
   RxList<Map<String, dynamic>> vehicleEntries = <Map<String, dynamic>>[].obs;
   RxList<Map<String, dynamic>> vehicleExits = <Map<String, dynamic>>[].obs;
 
+  // Filtered data lists for search
+  RxList<Map<String, dynamic>> filteredVehicleEntries =
+      <Map<String, dynamic>>[].obs;
+  RxList<Map<String, dynamic>> filteredVehicleExits =
+      <Map<String, dynamic>>[].obs;
+
+  // Search controller
+  final TextEditingController searchController = TextEditingController();
+  RxString searchQuery = ''.obs;
+
   // Summary metrics
   RxInt totalEntries = 0.obs;
   RxInt totalExits = 0.obs;
@@ -37,6 +47,50 @@ class AdminReportsController extends GetxController {
   void onInit() {
     super.onInit();
     fetchData();
+
+    // Add listener to search controller
+    searchController.addListener(() {
+      searchQuery.value = searchController.text;
+      filterData();
+    });
+  }
+
+  @override
+  void onClose() {
+    searchController.dispose();
+    super.onClose();
+  }
+
+  // Filter data based on search query
+  void filterData() {
+    if (searchQuery.value.isEmpty) {
+      // If search query is empty, show all data
+      filteredVehicleEntries.value = vehicleEntries;
+      filteredVehicleExits.value = vehicleExits;
+    } else {
+      // Filter entries by vehicle number
+      filteredVehicleEntries.value = vehicleEntries.where((entry) {
+        final vehicleNumber =
+            entry['vehicleNumber']?.toString().toLowerCase() ?? '';
+        return vehicleNumber.contains(searchQuery.value.toLowerCase());
+      }).toList();
+
+      // Filter exits by vehicle number
+      filteredVehicleExits.value = vehicleExits.where((exit) {
+        final vehicleNumber =
+            exit['vehicleNumber']?.toString().toLowerCase() ?? '';
+        return vehicleNumber.contains(searchQuery.value.toLowerCase());
+      }).toList();
+    }
+
+    update(['report_tabs']);
+  }
+
+  // Clear search
+  void clearSearch() {
+    searchController.clear();
+    searchQuery.value = '';
+    filterData();
   }
 
   // Change selected tab
@@ -121,6 +175,10 @@ class AdminReportsController extends GetxController {
         final bTime = DateTime.parse(b['exitTime']);
         return bTime.compareTo(aTime); // descending order
       });
+
+      // Initialize filtered lists
+      filteredVehicleEntries.value = vehicleEntries;
+      filteredVehicleExits.value = vehicleExits;
 
       // Calculate metrics
       totalEntries.value = vehicleEntries.length;

@@ -13,39 +13,37 @@ class AdminDashboardView extends GetView<AdminDashboardController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ConstColors.backgroundColor,
-      appBar: PreferredSize(
-        preferredSize: Size(Get.width, 65.h),
-        child: AppBar(
-          leading: IconButton(
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: () {
+            Get.back();
+          },
+          icon: Icon(
+            Icons.arrow_back,
+            color: ConstColors.black,
+            size: 25.sp,
+          ),
+        ),
+        title: Text(
+          "Admin Dashboard",
+          style: getTextTheme().headlineLarge,
+          overflow: TextOverflow.ellipsis,
+        ),
+        backgroundColor: ConstColors.white,
+        surfaceTintColor: ConstColors.backgroundColor,
+        actions: [
+          IconButton(
             onPressed: () {
-              Get.back();
+              _showLogoutOptions(context);
             },
             icon: Icon(
-              Icons.arrow_back,
-              color: ConstColors.black,
-              size: 25.sp,
+              Icons.logout,
+              color: Colors.red,
+              size: 22.sp,
             ),
           ),
-          title: Text(
-            "Admin Dashboard",
-            style: getTextTheme().headlineLarge,
-            overflow: TextOverflow.ellipsis,
-          ),
-          backgroundColor: ConstColors.white,
-          surfaceTintColor: ConstColors.backgroundColor,
-          actions: [
-            IconButton(
-              onPressed: () {
-                _showLogoutOptions(context);
-              },
-              icon: Icon(
-                Icons.logout,
-                color: Colors.red,
-                size: 25.sp,
-              ),
-            ),
-          ],
-        ),
+          SizedBox(width: 10.w),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(

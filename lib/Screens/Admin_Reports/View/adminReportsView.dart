@@ -17,51 +17,49 @@ class AdminReportsView extends GetView<AdminReportsController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ConstColors.backgroundColor,
-      appBar: PreferredSize(
-        preferredSize: Size(Get.width, 65.h),
-        child: AppBar(
-          leading: IconButton(
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: () {
+            Get.back();
+          },
+          icon: Icon(
+            Icons.arrow_back,
+            color: ConstColors.black,
+            size: 25.sp,
+          ),
+        ),
+        title: Text(
+          "Parking Reports",
+          style: getTextTheme().headlineLarge,
+          overflow: TextOverflow.ellipsis,
+        ),
+        backgroundColor: ConstColors.white,
+        surfaceTintColor: ConstColors.backgroundColor,
+        actions: [
+          IconButton(
             onPressed: () {
-              Get.back();
+              _showDateRangePicker(context);
             },
             icon: Icon(
-              Icons.arrow_back,
-              color: ConstColors.black,
+              Icons.date_range,
+              color: ConstColors.green,
               size: 25.sp,
             ),
+            tooltip: "Select Date Range",
           ),
-          title: Text(
-            "Parking Reports",
-            style: getTextTheme().headlineLarge,
-            overflow: TextOverflow.ellipsis,
+          IconButton(
+            onPressed: () {
+              controller.generatePdfReport();
+            },
+            icon: Icon(
+              Icons.download,
+              color: ConstColors.green,
+              size: 25.sp,
+            ),
+            tooltip: "Download Report",
           ),
-          backgroundColor: ConstColors.white,
-          surfaceTintColor: ConstColors.backgroundColor,
-          actions: [
-            IconButton(
-              onPressed: () {
-                _showDateRangePicker(context);
-              },
-              icon: Icon(
-                Icons.date_range,
-                color: ConstColors.green,
-                size: 25.sp,
-              ),
-              tooltip: "Select Date Range",
-            ),
-            IconButton(
-              onPressed: () {
-                controller.generatePdfReport();
-              },
-              icon: Icon(
-                Icons.download,
-                color: ConstColors.green,
-                size: 25.sp,
-              ),
-              tooltip: "Download Report",
-            ),
-          ],
-        ),
+          SizedBox(width: 10.w),
+        ],
       ),
       body: GetBuilder<AdminReportsController>(
         id: 'report_tabs',
@@ -73,6 +71,7 @@ class AdminReportsView extends GetView<AdminReportsController> {
           return Column(
             children: [
               _buildDateRangeHeader(),
+              _buildSearchBar(),
               _buildSummaryCard(),
               _buildTabBar(),
               Expanded(
@@ -82,6 +81,51 @@ class AdminReportsView extends GetView<AdminReportsController> {
               ),
             ],
           );
+        },
+      ),
+    );
+  }
+
+  // Widget to build search bar
+  Widget _buildSearchBar() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 15.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller.searchController,
+        decoration: InputDecoration(
+          hintText: "Search by vehicle number",
+          prefixIcon: Icon(
+            Icons.search,
+            color: ConstColors.green,
+          ),
+          suffixIcon: Obx(() => controller.searchQuery.value.isNotEmpty
+              ? IconButton(
+                  icon: Icon(
+                    Icons.clear,
+                    color: ConstColors.green,
+                  ),
+                  onPressed: () {
+                    controller.clearSearch();
+                  },
+                )
+              : const SizedBox.shrink()),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(vertical: 15.h),
+        ),
+        textInputAction: TextInputAction.search,
+        onSubmitted: (value) {
+          // This will trigger search via the listener in controller
         },
       ),
     );
@@ -136,12 +180,12 @@ class AdminReportsView extends GetView<AdminReportsController> {
           Icon(
             Icons.calendar_today,
             color: ConstColors.green,
-            size: 20.sp,
+            size: 18.sp,
           ),
           Text(
             "Date Range: $startFormatted - $endFormatted",
             style: GoogleFonts.poppins(
-              fontSize: 14.sp,
+              fontSize: 12.sp,
               fontWeight: FontWeight.w500,
               color: ConstColors.green,
             ),
@@ -155,8 +199,8 @@ class AdminReportsView extends GetView<AdminReportsController> {
   // Widget to display summary metrics
   Widget _buildSummaryCard() {
     return Container(
-      margin: EdgeInsets.all(15.w),
-      padding: EdgeInsets.all(15.w),
+      margin: EdgeInsets.symmetric(horizontal: 15.w, vertical: 8.h),
+      padding: EdgeInsets.all(8.w),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
@@ -205,13 +249,13 @@ class AdminReportsView extends GetView<AdminReportsController> {
         Icon(
           icon,
           color: ConstColors.green,
-          size: 30.sp,
+          size: 25.sp,
         ),
         SizedBox(height: 5.h),
         Text(
           value,
           style: GoogleFonts.poppins(
-            fontSize: 16.sp,
+            fontSize: 14.sp,
             fontWeight: FontWeight.bold,
             color: ConstColors.black,
           ),
@@ -252,7 +296,7 @@ class AdminReportsView extends GetView<AdminReportsController> {
             child: GestureDetector(
               onTap: () => controller.changeTab(0),
               child: Container(
-                padding: EdgeInsets.symmetric(vertical: 15.h),
+                padding: EdgeInsets.symmetric(vertical: 10.h),
                 decoration: BoxDecoration(
                   color: controller.selectedTabIndex.value == 0
                       ? ConstColors.green
@@ -263,7 +307,7 @@ class AdminReportsView extends GetView<AdminReportsController> {
                   child: Text(
                     "Entries",
                     style: GoogleFonts.poppins(
-                      fontSize: 16.sp,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
                       color: controller.selectedTabIndex.value == 0
                           ? Colors.white
@@ -278,7 +322,7 @@ class AdminReportsView extends GetView<AdminReportsController> {
             child: GestureDetector(
               onTap: () => controller.changeTab(1),
               child: Container(
-                padding: EdgeInsets.symmetric(vertical: 15.h),
+                padding: EdgeInsets.symmetric(vertical: 10.h),
                 decoration: BoxDecoration(
                   color: controller.selectedTabIndex.value == 1
                       ? ConstColors.green
@@ -289,7 +333,7 @@ class AdminReportsView extends GetView<AdminReportsController> {
                   child: Text(
                     "Exits",
                     style: GoogleFonts.poppins(
-                      fontSize: 16.sp,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
                       color: controller.selectedTabIndex.value == 1
                           ? Colors.white
@@ -307,10 +351,12 @@ class AdminReportsView extends GetView<AdminReportsController> {
 
   // Widget to display entries tab
   Widget _buildEntriesTab() {
-    if (controller.vehicleEntries.isEmpty) {
+    if (controller.filteredVehicleEntries.isEmpty) {
       return Center(
         child: Text(
-          "No entries found for this date range",
+          controller.searchQuery.value.isEmpty
+              ? "No entries found for this date range"
+              : "No entries found for '${controller.searchQuery.value}'",
           style: GoogleFonts.poppins(
             fontSize: 16.sp,
             color: Colors.grey[600],
@@ -333,9 +379,9 @@ class AdminReportsView extends GetView<AdminReportsController> {
         ],
       ),
       child: ListView.builder(
-        itemCount: controller.vehicleEntries.length,
+        itemCount: controller.filteredVehicleEntries.length,
         itemBuilder: (context, index) {
-          final entry = controller.vehicleEntries[index];
+          final entry = controller.filteredVehicleEntries[index];
           final entryTime = DateTime.parse(entry['entryTime']);
           final formattedTime =
               DateFormat('MMM dd, yyyy hh:mm a').format(entryTime);
@@ -379,10 +425,12 @@ class AdminReportsView extends GetView<AdminReportsController> {
 
   // Widget to display exits tab
   Widget _buildExitsTab() {
-    if (controller.vehicleExits.isEmpty) {
+    if (controller.filteredVehicleExits.isEmpty) {
       return Center(
         child: Text(
-          "No exits found for this date range",
+          controller.searchQuery.value.isEmpty
+              ? "No exits found for this date range"
+              : "No exits found for '${controller.searchQuery.value}'",
           style: GoogleFonts.poppins(
             fontSize: 16.sp,
             color: Colors.grey[600],
@@ -405,9 +453,9 @@ class AdminReportsView extends GetView<AdminReportsController> {
         ],
       ),
       child: ListView.builder(
-        itemCount: controller.vehicleExits.length,
+        itemCount: controller.filteredVehicleExits.length,
         itemBuilder: (context, index) {
-          final exit = controller.vehicleExits[index];
+          final exit = controller.filteredVehicleExits[index];
           final exitTime = DateTime.parse(exit['exitTime']);
           final formattedTime =
               DateFormat('MMM dd, yyyy hh:mm a').format(exitTime);
