@@ -65,7 +65,7 @@ class HomeController extends GetxController {
     timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       updateDateTime();
     });
-
+    log('location type is $locationType');
     // Fetch companies data
     fetchCompanies();
 
@@ -117,13 +117,14 @@ class HomeController extends GetxController {
   RxBool isOtherLocationSelected = false.obs;
   RxList<GetOfficeModel> locationTypeList = <GetOfficeModel>[].obs;
   Timer? timer;
+  RxString orgName = ''.obs;
 
   void updateDateTime() {
     final now = DateTime.now();
     currentDateWithDay.value = DateFormat('d MMM yyyy EEEE').format(now);
     currentDay.value = DateFormat('EEEE').format(now);
     currentTime.value = DateFormat('h:mm a').format(now);
-    update(["homeScreen"]);
+    update(["date", "homeScreen"]);
   }
 
   // Method to handle location selection
@@ -203,7 +204,8 @@ class HomeController extends GetxController {
           .collection('vehicle_rates')
           .where('adminId', isEqualTo: adminId)
           .get();
-
+      orgName.value = rates.docs.first.data()['organization'] ?? '';
+      log('Organization Name: $orgName');
       vehicleRates.value =
           rates.docs.map((doc) => GetVehicleRate.fromMap(doc.data())).toList();
 
@@ -425,8 +427,8 @@ class HomeController extends GetxController {
       }
 
       // Generate QR code data as a string
-      final qrData = "${vehicleNo.text.toUpperCase()}_$tokenNo";
-
+      final qrData = "${vehicleNo.text.toUpperCase()}";
+      log("QR Data: $qrData");
       // Get the current admin ID
       final adminId = storage.read('userMasterID') ?? '';
       final organization = storage.read('organization') ?? '';
@@ -487,29 +489,30 @@ class HomeController extends GetxController {
 
       // Generate PDF
       await generatePdf(
-          vehicleNo.text.toUpperCase(),
-          selectedVehicle.value == 2 ? '2 Wheeler' : '4 Wheeler',
-          'Aditya Birla',
-          qrData, // Using the qrData string directly
-          vehicleRate.hoursRate,
-          vehicleRate.everyHoursRate,
-          vehicleRate.hours24Rate,
-          DateFormat('yyyy-MM-dd').format(entryTime),
-          DateFormat('hh:mm a').format(entryTime),
-          tokenNo,
-          vehicleRate.amountFor2,
-          vehicleRate.amountAfter2,
-          selectedVehicle.value == 4
-              ? 'assets/images/carpdf.png'
-              : 'assets/images/bikepdf.png',
-          locationName); // Use location name instead of ID
+        vehicleNo.text.toUpperCase(),
+        selectedVehicle.value == 2 ? '2 Wheeler' : '4 Wheeler',
+        orgName.value,
+        qrData, // Using the qrData string directly
+        vehicleRate.hoursRate,
+        vehicleRate.everyHoursRate,
+        vehicleRate.hours24Rate,
+        DateFormat('yyyy-MM-dd').format(entryTime),
+        DateFormat('hh:mm a').format(entryTime),
+        tokenNo,
+        vehicleRate.amountFor2,
+        vehicleRate.amountAfter2,
+        selectedVehicle.value == 4
+            ? 'assets/images/carpdf.png'
+            : 'assets/images/bikepdf.png',
+        locationName,
+      ); // Use location name instead of ID
 
       // Reset fields
       vehicleNo.clear();
       selectedVehicle.value = 2;
       // Keep the current location selected rather than resetting to default
       isPdfLoading.value = true;
-
+      customLocationController.clear();
       isPdfLoading.value = false;
       update(["homeScreen"]);
     } catch (e) {
@@ -519,126 +522,126 @@ class HomeController extends GetxController {
     }
   }
 
-  Future<void> generatePdf(
-      String vehicleNumber,
-      String vehicleTy,
-      String companyName,
-      String qrCodeNumber,
-      String hoursRate,
-      String everyHoursRate,
-      String hours24Rate,
-      String date,
-      String time,
-      String tokenNo,
-      String amountFor2,
-      String amountAfter2,
-      var bikeIcon,
-      String location) async {
-    final pdf = pw.Document();
+  // Future<void> generatePdf(
+  //     String vehicleNumber,
+  //     String vehicleTy,
+  //     String companyName,
+  //     String qrCodeNumber,
+  //     String hoursRate,
+  //     String everyHoursRate,
+  //     String hours24Rate,
+  //     String date,
+  //     String time,
+  //     String tokenNo,
+  //     String amountFor2,
+  //     String amountAfter2,
+  //     var bikeIcon,
+  //     String location) async {
+  //   final pdf = pw.Document();
 
-    log("VehicleType $vehicleNumber");
-    log("Selected Location: $location");
+  //   log("VehicleType $vehicleNumber");
+  //   log("Selected Location: $location");
 
-    // Load image asset
-    final ByteData imageData = await rootBundle.load(bikeIcon);
-    final Uint8List imageBytes = imageData.buffer.asUint8List();
-    final img = pw.MemoryImage(imageBytes);
+  //   // Load image asset
+  //   final ByteData imageData = await rootBundle.load(bikeIcon);
+  //   final Uint8List imageBytes = imageData.buffer.asUint8List();
+  //   final img = pw.MemoryImage(imageBytes);
 
-    pdf.addPage(
-      pw.Page(
-        margin: pw.EdgeInsets.zero,
-        build: (pw.Context context) {
-          return pw.Column(
-            mainAxisAlignment: pw.MainAxisAlignment.start,
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Center(
-                child: pw.Text("* $companyName *",
-                    style: pw.TextStyle(
-                      fontSize: 40.sp,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.black,
-                    )),
-              ),
-              pw.Center(
-                child: pw.Text("Parking Receipt",
-                    style: pw.TextStyle(
-                      fontSize: 25.sp,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.black,
-                    )),
-              ),
-              pw.Center(
-                child: pw.Text('Token No. $tokenNo',
-                    style:
-                        pw.TextStyle(fontSize: 25.sp, color: PdfColors.black)),
-              ),
-              pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: pw.CrossAxisAlignment.center,
-                  children: [
-                    pw.BarcodeWidget(
-                      color: PdfColors.black,
-                      barcode: pw.Barcode.qrCode(),
-                      data: qrCodeNumber,
-                      height: 200,
-                      width: 200,
-                    ),
-                    pw.Column(
-                        mainAxisAlignment: pw.MainAxisAlignment.start,
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Text('Vehicle No. : $vehicleNumber',
-                              style: pw.TextStyle(
-                                  fontSize: 25.sp, color: PdfColors.black)),
-                          pw.Text('Vehicle Type : $vehicleTy',
-                              style: pw.TextStyle(
-                                  fontSize: 25.sp, color: PdfColors.black)),
-                          pw.Text('Location : $location',
-                              style: pw.TextStyle(
-                                  fontSize: 25.sp, color: PdfColors.black)),
-                          pw.Text('Entry Date : $date',
-                              style: pw.TextStyle(
-                                  fontSize: 25.sp, color: PdfColors.black)),
-                          pw.Text('Entry Time : $time',
-                              style: pw.TextStyle(
-                                  fontSize: 25.sp, color: PdfColors.black)),
-                        ])
-                  ]),
-              pw.Divider(),
-              pw.Text('Rates',
-                  style: pw.TextStyle(fontSize: 25.sp, color: PdfColors.black)),
-              pw.Text('First 2 Hours : Rs $hoursRate',
-                  style: pw.TextStyle(fontSize: 25.sp, color: PdfColors.black)),
-              pw.Text('After 2 Hours (hourly) : Rs $everyHoursRate',
-                  style: pw.TextStyle(fontSize: 25.sp, color: PdfColors.black)),
-              pw.Text('24 Hours : Rs $hours24Rate',
-                  style: pw.TextStyle(fontSize: 25.sp, color: PdfColors.black)),
-              pw.Divider(),
-              pw.Center(
-                child: pw.Image(
-                  img,
-                  width: 300.w,
-                  height: 150.h,
-                ),
-              ),
-              pw.Center(
-                child: pw.Text("Thank you for using our parking service.",
-                    style: pw.TextStyle(
-                        fontSize: 25.sp,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.black)),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+  //   pdf.addPage(
+  //     pw.Page(
+  //       margin: pw.EdgeInsets.zero,
+  //       build: (pw.Context context) {
+  //         return pw.Column(
+  //           mainAxisAlignment: pw.MainAxisAlignment.start,
+  //           crossAxisAlignment: pw.CrossAxisAlignment.start,
+  //           children: [
+  //             pw.Center(
+  //               child: pw.Text("* $companyName *",
+  //                   style: pw.TextStyle(
+  //                     fontSize: 40.sp,
+  //                     fontWeight: pw.FontWeight.bold,
+  //                     color: PdfColors.black,
+  //                   )),
+  //             ),
+  //             pw.Center(
+  //               child: pw.Text("Parking Receipt",
+  //                   style: pw.TextStyle(
+  //                     fontSize: 25.sp,
+  //                     fontWeight: pw.FontWeight.bold,
+  //                     color: PdfColors.black,
+  //                   )),
+  //             ),
+  //             pw.Center(
+  //               child: pw.Text('Token No. $tokenNo',
+  //                   style:
+  //                       pw.TextStyle(fontSize: 25.sp, color: PdfColors.black)),
+  //             ),
+  //             pw.Row(
+  //                 mainAxisAlignment: pw.MainAxisAlignment.spaceEvenly,
+  //                 crossAxisAlignment: pw.CrossAxisAlignment.center,
+  //                 children: [
+  //                   pw.BarcodeWidget(
+  //                     color: PdfColors.black,
+  //                     barcode: pw.Barcode.qrCode(),
+  //                     data: qrCodeNumber,
+  //                     height: 200,
+  //                     width: 200,
+  //                   ),
+  //                   pw.Column(
+  //                       mainAxisAlignment: pw.MainAxisAlignment.start,
+  //                       crossAxisAlignment: pw.CrossAxisAlignment.start,
+  //                       children: [
+  //                         pw.Text('Vehicle No. : $vehicleNumber',
+  //                             style: pw.TextStyle(
+  //                                 fontSize: 25.sp, color: PdfColors.black)),
+  //                         pw.Text('Vehicle Type : $vehicleTy',
+  //                             style: pw.TextStyle(
+  //                                 fontSize: 25.sp, color: PdfColors.black)),
+  //                         pw.Text('Location : $location',
+  //                             style: pw.TextStyle(
+  //                                 fontSize: 25.sp, color: PdfColors.black)),
+  //                         pw.Text('Entry Date : $date',
+  //                             style: pw.TextStyle(
+  //                                 fontSize: 25.sp, color: PdfColors.black)),
+  //                         pw.Text('Entry Time : $time',
+  //                             style: pw.TextStyle(
+  //                                 fontSize: 25.sp, color: PdfColors.black)),
+  //                       ])
+  //                 ]),
+  //             pw.Divider(),
+  //             pw.Text('Rates',
+  //                 style: pw.TextStyle(fontSize: 25.sp, color: PdfColors.black)),
+  //             pw.Text('First 2 Hours : Rs $hoursRate',
+  //                 style: pw.TextStyle(fontSize: 25.sp, color: PdfColors.black)),
+  //             pw.Text('After 2 Hours (hourly) : Rs $everyHoursRate',
+  //                 style: pw.TextStyle(fontSize: 25.sp, color: PdfColors.black)),
+  //             pw.Text('24 Hours : Rs $hours24Rate',
+  //                 style: pw.TextStyle(fontSize: 25.sp, color: PdfColors.black)),
+  //             pw.Divider(),
+  //             pw.Center(
+  //               child: pw.Image(
+  //                 img,
+  //                 width: 300.w,
+  //                 height: 150.h,
+  //               ),
+  //             ),
+  //             pw.Center(
+  //               child: pw.Text("Thank you for using our parking service.",
+  //                   style: pw.TextStyle(
+  //                       fontSize: 25.sp,
+  //                       fontWeight: pw.FontWeight.bold,
+  //                       color: PdfColors.black)),
+  //             ),
+  //           ],
+  //         );
+  //       },
+  //     ),
+  //   );
 
-    await Printing.layoutPdf(
-      onLayout: (format) async => pdf.save(),
-    );
-  }
+  //   await Printing.layoutPdf(
+  //     onLayout: (format) async => pdf.save(),
+  //   );
+  // }
 
   Future<void> fetchLocations() async {
     try {
@@ -746,5 +749,316 @@ class HomeController extends GetxController {
     fetchLocations();
     getLocationList();
     update(["locations", "homeScreen"]);
+  }
+
+  Future<void> generatePdf(
+      String vehicleNumber,
+      String vehicleTy,
+      String companyName,
+      String qrCodeNumber,
+      String hoursRate,
+      String everyHoursRate,
+      String hours24Rate,
+      String date,
+      String time,
+      String tokenNo,
+      String amountFor2,
+      String amountAfter2,
+      var bikeIcon,
+      String location) async {
+    // Create PDF document
+    final pdf = pw.Document();
+
+    // Set up font
+    final font = await PdfGoogleFonts.nunitoRegular();
+    final fontBold = await PdfGoogleFonts.nunitoBold();
+
+    // Log information for debugging
+    debugPrint("VehicleType: $vehicleNumber");
+    debugPrint("Selected Location: $location");
+
+    // Load image asset
+    final ByteData imageData = await rootBundle.load(bikeIcon);
+    final Uint8List imageBytes = imageData.buffer.asUint8List();
+    final img = pw.MemoryImage(imageBytes);
+
+    // Add logo image if available
+    final ByteData? logoData = await _loadLogoAsset();
+    final pw.Image? logoImage = logoData != null
+        ? pw.Image(pw.MemoryImage(logoData.buffer.asUint8List()))
+        : null;
+
+    // Add page with better formatting
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a5,
+        margin: const pw.EdgeInsets.all(15),
+        build: (pw.Context context) {
+          return pw.Container(
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(width: 1, color: PdfColors.black),
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
+            ),
+            padding: const pw.EdgeInsets.all(10),
+            child: pw.Column(
+              mainAxisAlignment: pw.MainAxisAlignment.start,
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                // Header with logo if available
+                logoImage != null
+                    ? pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.center,
+                        children: [
+                          pw.Container(
+                            width: 40,
+                            height: 40,
+                            child: logoImage,
+                          ),
+                          pw.SizedBox(width: 10),
+                          pw.Text(
+                            "$companyName",
+                            style: pw.TextStyle(
+                              font: fontBold,
+                              fontSize: 18,
+                              color: PdfColors.black,
+                            ),
+                          ),
+                        ],
+                      )
+                    : pw.Center(
+                        child: pw.Text(
+                          "$companyName",
+                          style: pw.TextStyle(
+                            font: fontBold,
+                            fontSize: 18,
+                            color: PdfColors.black,
+                          ),
+                        ),
+                      ),
+                pw.SizedBox(height: 5),
+                pw.Center(
+                  child: pw.Text(
+                    "Parking Receipt",
+                    style: pw.TextStyle(
+                      font: fontBold,
+                      fontSize: 14,
+                      color: PdfColors.black,
+                    ),
+                  ),
+                ),
+                pw.SizedBox(height: 5),
+                pw.Center(
+                  child: pw.Container(
+                    padding: const pw.EdgeInsets.symmetric(
+                        horizontal: 15, vertical: 3),
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.grey300,
+                      borderRadius:
+                          const pw.BorderRadius.all(pw.Radius.circular(5)),
+                    ),
+                    child: pw.Text(
+                      'Token No. $tokenNo',
+                      style: pw.TextStyle(
+                        font: fontBold,
+                        fontSize: 14,
+                        color: PdfColors.black,
+                      ),
+                    ),
+                  ),
+                ),
+                pw.SizedBox(height: 10),
+                pw.Divider(thickness: 1),
+                pw.SizedBox(height: 10),
+
+                // Main content with QR and vehicle info
+                pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Expanded(
+                      flex: 4,
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          _buildInfoRow("Vehicle No.", vehicleNumber, font),
+                          _buildInfoRow("Vehicle Type", vehicleTy, font),
+                          _buildInfoRow("Location", location, font),
+                          _buildInfoRow("Entry Date", date, font),
+                          _buildInfoRow("Entry Time", time, font),
+                        ],
+                      ),
+                    ),
+                    pw.BarcodeWidget(
+                      color: PdfColors.black,
+                      barcode: pw.Barcode.qrCode(),
+                      data: qrCodeNumber,
+                      height: 150.h,
+                      width: 150.w,
+                    ),
+                  ],
+                ),
+
+                pw.SizedBox(height: 10),
+                pw.Divider(thickness: 1),
+                pw.SizedBox(height: 5),
+
+                // Rates section with better formatting
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(8),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.grey100,
+                    borderRadius:
+                        const pw.BorderRadius.all(pw.Radius.circular(5)),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        'Parking Rates',
+                        style: pw.TextStyle(
+                          font: fontBold,
+                          fontSize: 12,
+                          color: PdfColors.black,
+                        ),
+                      ),
+                      pw.SizedBox(height: 5),
+                      _buildRateRow("First 2 Hours", "Rs $hoursRate", font),
+                      _buildRateRow(
+                          "After 2 Hours (hourly)", "Rs $everyHoursRate", font),
+                      _buildRateRow("24 Hours", "Rs $hours24Rate", font),
+                    ],
+                  ),
+                ),
+
+                pw.SizedBox(height: 15),
+
+                // Vehicle icon
+                pw.Center(
+                  child: pw.Image(
+                    img,
+                    width: 80,
+                    height: 60,
+                  ),
+                ),
+
+                pw.SizedBox(height: 10),
+
+                // Footer
+                pw.Divider(thickness: 1),
+                pw.SizedBox(height: 5),
+                pw.Center(
+                  child: pw.Text(
+                    "Thank you for using our parking service",
+                    style: pw.TextStyle(
+                      font: font,
+                      fontSize: 10,
+                      color: PdfColors.black,
+                    ),
+                  ),
+                ),
+                pw.SizedBox(height: 3),
+                pw.Center(
+                  child: pw.Text(
+                    "Please keep this receipt safe for exit",
+                    style: pw.TextStyle(
+                      font: fontBold,
+                      fontSize: 10,
+                      color: PdfColors.black,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+
+    // Print or save PDF
+    await Printing.layoutPdf(
+      onLayout: (format) async => pdf.save(),
+      name:
+          "Parking_Receipt_$tokenNo.pdf", // Sets the filename for download/print
+    );
+  }
+
+// Helper function to load logo asset
+  Future<ByteData?> _loadLogoAsset() async {
+    try {
+      return await rootBundle.load('assets/images/icon.png');
+    } catch (e) {
+      debugPrint('Logo not found: $e');
+      return null;
+    }
+  }
+
+// Helper function to build info rows
+  pw.Widget _buildInfoRow(String label, String value, pw.Font font) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 2),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Container(
+            width: 80,
+            child: pw.Text(
+              label,
+              style: pw.TextStyle(
+                font: font,
+                fontSize: 10,
+                color: PdfColors.black,
+              ),
+            ),
+          ),
+          pw.Text(
+            ': ',
+            style: pw.TextStyle(
+              font: font,
+              fontSize: 10,
+              color: PdfColors.black,
+            ),
+          ),
+          pw.Expanded(
+            child: pw.Text(
+              value,
+              style: pw.TextStyle(
+                font: font,
+                fontSize: 10,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.black,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+// Helper function to build rate rows
+  pw.Widget _buildRateRow(String label, String value, pw.Font font) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 2),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text(
+            label,
+            style: pw.TextStyle(
+              font: font,
+              fontSize: 10,
+              color: PdfColors.black,
+            ),
+          ),
+          pw.Text(
+            value,
+            style: pw.TextStyle(
+              font: font,
+              fontSize: 10,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.black,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

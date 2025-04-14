@@ -51,7 +51,7 @@ class FirstScreen extends StatelessWidget {
                   Text(
                     organizationName,
                     style: GoogleFonts.poppins(
-                      fontSize: 20.sp,
+                      fontSize: 18.sp,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),

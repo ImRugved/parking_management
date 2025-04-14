@@ -9,6 +9,7 @@ import 'package:aditya_birla/Constant/custom_textstyle.dart';
 import 'package:aditya_birla/Constant/loading.dart';
 import 'package:aditya_birla/Constant/rounded_button.dart';
 import 'package:aditya_birla/Screens/ExitScreen/Controller/exitController.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ExitScreen extends GetView<ExitController> {
   const ExitScreen({super.key});
@@ -16,55 +17,36 @@ class ExitScreen extends GetView<ExitController> {
   @override
   Widget build(BuildContext context) {
     return GetBuilder(
-        init: ExitController(),
-        id: "ExitScreen",
-        builder: (_) {
-          return Scaffold(
-              appBar: PreferredSize(
-                preferredSize: Size(Get.width, 65.h),
-                child: AppBar(
-                  automaticallyImplyLeading: false,
-                  flexibleSpace: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20.w),
-                    child: SafeArea(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Logo on the left
-
-                          // Title in the center with flexible width
-                          Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 10.w),
-                              child: Text(
-                                "Parking Management",
-                                style: getTextTheme().headlineLarge,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                          // Back button on the right
-                          IconButton(
-                            onPressed: () {
-                              Get.back();
-                            },
-                            icon: Icon(
-                              Icons.arrow_back,
-                              color: ConstColors.black,
-                              size: 24.sp,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  backgroundColor: ConstColors.white,
-                  surfaceTintColor: ConstColors.backgroundColor,
-                ),
+      init: ExitController(),
+      id: "ExitScreen",
+      builder: (_) {
+        return Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              onPressed: () {
+                Get.back();
+              },
+              icon: Icon(
+                Icons.arrow_back,
+                color: ConstColors.black,
+                size: 24.sp,
               ),
-              backgroundColor: ConstColors.backgroundColor,
-              body: Padding(
+            ),
+            automaticallyImplyLeading: false,
+            title: Text(
+              "Parking Management",
+              style: getTextTheme().headlineLarge,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+            centerTitle: true,
+            backgroundColor: ConstColors.white,
+            surfaceTintColor: ConstColors.backgroundColor,
+          ),
+          backgroundColor: ConstColors.backgroundColor,
+          body: Stack(
+            children: [
+              Padding(
                 padding: EdgeInsets.symmetric(vertical: 15.h, horizontal: 20.w),
                 child: SingleChildScrollView(
                   child: Column(
@@ -186,10 +168,45 @@ class ExitScreen extends GetView<ExitController> {
                               ],
                             )
                           : const SizedBox(),
+                      // Add padding at the bottom to ensure content doesn't get hidden behind the footer
+                      SizedBox(height: 60.h),
                     ],
                   ),
                 ),
-              ));
-        });
+              ),
+              // Footer text positioned at the bottom
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: 20.h),
+                  child: RichText(
+                    text: TextSpan(
+                      children: <TextSpan>[
+                        TextSpan(
+                          text: 'Powered By ',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                            color: ConstColors.black,
+                            fontSize: 12.sp,
+                          ),
+                        ),
+                        TextSpan(
+                          text: 'Rugved Belkundkar.',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                            color: ConstColors.green,
+                            fontSize: 12.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

@@ -72,13 +72,6 @@ class MasterController extends GetxController {
     update(['master_dashboard']);
   }
 
-  void viewOrganizationData(String orgId, String orgName) {
-    selectedOrganizationId.value = orgId;
-    selectedOrganizationName.value = orgName;
-    currentView.value = 'vehicle_data';
-    update(['master_dashboard']);
-  }
-
   void togglePasswordVisibility() {
     isVisible.value = !isVisible.value;
     update(['create_admin_form']);

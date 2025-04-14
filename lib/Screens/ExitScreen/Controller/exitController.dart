@@ -236,18 +236,26 @@ class ExitController extends GetxController {
       }
 
       // Extract vehicle number from QR code (format: ABPMS-tokenNo-vehicleNumber)
-      if (scannedCode.startsWith('ABPMS-')) {
-        final parts = scannedCode.split('-');
-        if (parts.length >= 3) {
-          outputController.text = parts.sublist(2).join('-').toUpperCase();
-        } else {
-          outputController.text = scannedCode;
-          Get.snackbar("Warning", "QR code format not recognized");
-        }
-      } else {
+      if (scannedCode.isNotEmpty) {
         outputController.text = scannedCode;
-        Get.snackbar("Warning", "QR code may not be from our system");
+        update(['ExitScreen']);
+      } else {
+        Get.snackbar("Warning", "There is an error in QR code");
       }
+      // if (scannedCode.startsWith('ABPMS-')) {
+      //   final parts = scannedCode.split('-');
+      //   if (parts.length >= 3) {
+      //     outputController.text = parts.sublist(2).join('-').toUpperCase();
+      //   } else {
+      //     outputController.text = scannedCode;
+      //     Get.snackbar("Warning", "QR code format not recognized");
+      //   }
+      // } else {
+      //   log("Scanned Code: $scannedCode");
+      //   log("Output Controller: ${outputController.text}");
+      //   outputController.text = scannedCode;
+      //   Get.snackbar("Warning", "QR code may not be from our system");
+      // }
 
       if (outputController.text.isNotEmpty) {
         await getVehicleEntryData(false);
@@ -257,181 +265,181 @@ class ExitController extends GetxController {
     }
   }
 
-  Future<void> generateExitReceipt(
-      String vehicleNumber,
-      String companyName,
-      String amount,
-      String paymentType,
-      String vehicleType,
-      String entryTimeStr,
-      String exitTimeStr,
-      String location,
-      Duration totalDuration,
-      String tokenNo) async {
-    final pdf = pw.Document();
-    final entryTime = DateTime.parse(entryTimeStr);
-    final exitTime = DateTime.parse(exitTimeStr);
+  // Future<void> generateExitReceipt(
+  //     String vehicleNumber,
+  //     String companyName,
+  //     String amount,
+  //     String paymentType,
+  //     String vehicleType,
+  //     String entryTimeStr,
+  //     String exitTimeStr,
+  //     String location,
+  //     Duration totalDuration,
+  //     String tokenNo) async {
+  //   final pdf = pw.Document();
+  //   final entryTime = DateTime.parse(entryTimeStr);
+  //   final exitTime = DateTime.parse(exitTimeStr);
 
-    // Format dates for display
-    final entryDateFormatted = DateFormat('MMM dd, yyyy').format(entryTime);
-    final entryTimeFormatted = DateFormat('hh:mm a').format(entryTime);
-    final exitDateFormatted = DateFormat('MMM dd, yyyy').format(exitTime);
-    final exitTimeFormatted = DateFormat('hh:mm a').format(exitTime);
+  //   // Format dates for display
+  //   final entryDateFormatted = DateFormat('MMM dd, yyyy').format(entryTime);
+  //   final entryTimeFormatted = DateFormat('hh:mm a').format(entryTime);
+  //   final exitDateFormatted = DateFormat('MMM dd, yyyy').format(exitTime);
+  //   final exitTimeFormatted = DateFormat('hh:mm a').format(exitTime);
 
-    // Format duration
-    final hours = totalDuration.inHours;
-    final minutes = totalDuration.inMinutes % 60;
-    final durationText = '${hours}h ${minutes}m';
+  //   // Format duration
+  //   final hours = totalDuration.inHours;
+  //   final minutes = totalDuration.inMinutes % 60;
+  //   final durationText = '${hours}h ${minutes}m';
 
-    // Load image asset
-    final ByteData imageData = await rootBundle.load(vehicleType == '4 Wheeler'
-        ? 'assets/images/carpdf.png'
-        : 'assets/images/bikepdf.png');
-    final Uint8List imageBytes = imageData.buffer.asUint8List();
-    final img = pw.MemoryImage(imageBytes);
+  //   // Load image asset
+  //   final ByteData imageData = await rootBundle.load(vehicleType == '4 Wheeler'
+  //       ? 'assets/images/carpdf.png'
+  //       : 'assets/images/bikepdf.png');
+  //   final Uint8List imageBytes = imageData.buffer.asUint8List();
+  //   final img = pw.MemoryImage(imageBytes);
 
-    pdf.addPage(
-      pw.Page(
-        margin: pw.EdgeInsets.all(20),
-        build: (pw.Context context) {
-          return pw.Center(
-            child: pw.Column(
-              mainAxisAlignment: pw.MainAxisAlignment.start,
-              crossAxisAlignment: pw.CrossAxisAlignment.center,
-              children: [
-                pw.Text("$companyName",
-                    style: pw.TextStyle(
-                      fontSize: 24,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.black,
-                    )),
-                pw.SizedBox(height: 10),
-                pw.Text("Payment Receipt",
-                    style: pw.TextStyle(
-                        fontSize: 20,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.black)),
-                pw.SizedBox(height: 20),
-                pw.Divider(),
-                pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text("Token No:",
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text(tokenNo),
-                    ]),
-                pw.SizedBox(height: 10),
-                pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text("Vehicle Number:",
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text(vehicleNumber),
-                    ]),
-                pw.SizedBox(height: 10),
-                pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text("Vehicle Type:",
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text(vehicleType),
-                    ]),
-                pw.SizedBox(height: 10),
-                pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text("Location:",
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text(location),
-                    ]),
-                pw.SizedBox(height: 20),
-                pw.Divider(),
-                pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text("Entry Date:",
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text(entryDateFormatted),
-                    ]),
-                pw.SizedBox(height: 10),
-                pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text("Entry Time:",
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text(entryTimeFormatted),
-                    ]),
-                pw.SizedBox(height: 10),
-                pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text("Exit Date:",
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text(exitDateFormatted),
-                    ]),
-                pw.SizedBox(height: 10),
-                pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text("Exit Time:",
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text(exitTimeFormatted),
-                    ]),
-                pw.SizedBox(height: 10),
-                pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text("Total Duration:",
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text(durationText),
-                    ]),
-                pw.SizedBox(height: 20),
-                pw.Divider(),
-                pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text("Amount Paid:",
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text("Rs $amount"),
-                    ]),
-                pw.SizedBox(height: 10),
-                pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text("Payment Method:",
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text(paymentType),
-                    ]),
-                pw.SizedBox(height: 20),
-                pw.Center(
-                  child: pw.Image(
-                    img,
-                    width: 150,
-                    height: 100,
-                  ),
-                ),
-                pw.SizedBox(height: 20),
-                pw.Text("Thank you for using our parking service.",
-                    style: pw.TextStyle(
-                        fontSize: 16,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.black)),
-                pw.Text("Drive Safely",
-                    style: pw.TextStyle(
-                        fontSize: 16,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.black)),
-              ],
-            ),
-          );
-        },
-      ),
-    );
+  //   pdf.addPage(
+  //     pw.Page(
+  //       margin: pw.EdgeInsets.all(20),
+  //       build: (pw.Context context) {
+  //         return pw.Center(
+  //           child: pw.Column(
+  //             mainAxisAlignment: pw.MainAxisAlignment.start,
+  //             crossAxisAlignment: pw.CrossAxisAlignment.center,
+  //             children: [
+  //               pw.Text("$companyName",
+  //                   style: pw.TextStyle(
+  //                     fontSize: 24,
+  //                     fontWeight: pw.FontWeight.bold,
+  //                     color: PdfColors.black,
+  //                   )),
+  //               pw.SizedBox(height: 10),
+  //               pw.Text("Payment Receipt",
+  //                   style: pw.TextStyle(
+  //                       fontSize: 20,
+  //                       fontWeight: pw.FontWeight.bold,
+  //                       color: PdfColors.black)),
+  //               pw.SizedBox(height: 20),
+  //               pw.Divider(),
+  //               pw.Row(
+  //                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     pw.Text("Token No:",
+  //                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+  //                     pw.Text(tokenNo),
+  //                   ]),
+  //               pw.SizedBox(height: 10),
+  //               pw.Row(
+  //                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     pw.Text("Vehicle Number:",
+  //                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+  //                     pw.Text(vehicleNumber),
+  //                   ]),
+  //               pw.SizedBox(height: 10),
+  //               pw.Row(
+  //                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     pw.Text("Vehicle Type:",
+  //                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+  //                     pw.Text(vehicleType),
+  //                   ]),
+  //               pw.SizedBox(height: 10),
+  //               pw.Row(
+  //                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     pw.Text("Location:",
+  //                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+  //                     pw.Text(location),
+  //                   ]),
+  //               pw.SizedBox(height: 20),
+  //               pw.Divider(),
+  //               pw.Row(
+  //                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     pw.Text("Entry Date:",
+  //                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+  //                     pw.Text(entryDateFormatted),
+  //                   ]),
+  //               pw.SizedBox(height: 10),
+  //               pw.Row(
+  //                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     pw.Text("Entry Time:",
+  //                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+  //                     pw.Text(entryTimeFormatted),
+  //                   ]),
+  //               pw.SizedBox(height: 10),
+  //               pw.Row(
+  //                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     pw.Text("Exit Date:",
+  //                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+  //                     pw.Text(exitDateFormatted),
+  //                   ]),
+  //               pw.SizedBox(height: 10),
+  //               pw.Row(
+  //                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     pw.Text("Exit Time:",
+  //                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+  //                     pw.Text(exitTimeFormatted),
+  //                   ]),
+  //               pw.SizedBox(height: 10),
+  //               pw.Row(
+  //                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     pw.Text("Total Duration:",
+  //                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+  //                     pw.Text(durationText),
+  //                   ]),
+  //               pw.SizedBox(height: 20),
+  //               pw.Divider(),
+  //               pw.Row(
+  //                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     pw.Text("Amount Paid:",
+  //                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+  //                     pw.Text("Rs $amount"),
+  //                   ]),
+  //               pw.SizedBox(height: 10),
+  //               pw.Row(
+  //                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     pw.Text("Payment Method:",
+  //                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+  //                     pw.Text(paymentType),
+  //                   ]),
+  //               pw.SizedBox(height: 20),
+  //               pw.Center(
+  //                 child: pw.Image(
+  //                   img,
+  //                   width: 150,
+  //                   height: 100,
+  //                 ),
+  //               ),
+  //               pw.SizedBox(height: 20),
+  //               pw.Text("Thank you for using our parking service.",
+  //                   style: pw.TextStyle(
+  //                       fontSize: 16,
+  //                       fontWeight: pw.FontWeight.bold,
+  //                       color: PdfColors.black)),
+  //               pw.Text("Drive Safely",
+  //                   style: pw.TextStyle(
+  //                       fontSize: 16,
+  //                       fontWeight: pw.FontWeight.bold,
+  //                       color: PdfColors.black)),
+  //             ],
+  //           ),
+  //         );
+  //       },
+  //     ),
+  //   );
 
-    await Printing.layoutPdf(
-      onLayout: (format) async => pdf.save(),
-    );
-  }
+  //   await Printing.layoutPdf(
+  //     onLayout: (format) async => pdf.save(),
+  //   );
+  // }
 
   // Process vehicle exit
   Future<void> recordVehicleExit(String vehicleId) async {
@@ -547,7 +555,7 @@ class ExitController extends GetxController {
       // Generate receipt
       await generateExitReceipt(
           entryData['vehicleNumber'],
-          'Aditya Birla',
+          organizationName,
           charges.toString(),
           paymentType ?? 'Cash',
           vehicleType,
@@ -583,5 +591,500 @@ class ExitController extends GetxController {
     paymentAmount.clear();
     paymentType = null;
     currentVehicleData = {};
+  }
+
+  Future<void> generateExitReceipt(
+      String vehicleNumber,
+      String companyName,
+      String amount,
+      String paymentType,
+      String vehicleType,
+      String entryTimeStr,
+      String exitTimeStr,
+      String location,
+      Duration totalDuration,
+      String tokenNo) async {
+    // Create PDF document
+    final pdf = pw.Document();
+
+    // Set up fonts
+    final font = await PdfGoogleFonts.nunitoRegular();
+    final fontBold = await PdfGoogleFonts.nunitoBold();
+
+    // Parse dates
+    final entryTime = DateTime.parse(entryTimeStr);
+    final exitTime = DateTime.parse(exitTimeStr);
+
+    // Format dates for display
+    final entryDateFormatted = DateFormat('MMM dd, yyyy').format(entryTime);
+    final entryTimeFormatted = DateFormat('hh:mm a').format(entryTime);
+    final exitDateFormatted = DateFormat('MMM dd, yyyy').format(exitTime);
+    final exitTimeFormatted = DateFormat('hh:mm a').format(exitTime);
+
+    // Format duration
+    final hours = totalDuration.inHours;
+    final minutes = totalDuration.inMinutes % 60;
+    final durationText = '${hours}h ${minutes}m';
+
+    // Load vehicle image asset
+    final ByteData imageData = await rootBundle.load(vehicleType == '4 Wheeler'
+        ? 'assets/images/carpdf.png'
+        : 'assets/images/bikepdf.png');
+    final Uint8List imageBytes = imageData.buffer.asUint8List();
+    final img = pw.MemoryImage(imageBytes);
+
+    // Load company logo if available
+    final ByteData? logoData = await _loadLogoAsset();
+    final pw.Image? logoImage = logoData != null
+        ? pw.Image(pw.MemoryImage(logoData.buffer.asUint8List()))
+        : null;
+
+    // Generate current timestamp
+    final now = DateTime.now();
+    final receiptId = 'PK${now.millisecondsSinceEpoch.toString().substring(5)}';
+    final receiptDate = DateFormat('MMM dd, yyyy - hh:mm a').format(now);
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a5,
+        margin: const pw.EdgeInsets.all(15),
+        build: (pw.Context context) {
+          return pw.Container(
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(width: 1, color: PdfColors.black),
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
+            ),
+            padding: const pw.EdgeInsets.all(15),
+            child: pw.Column(
+              mainAxisAlignment: pw.MainAxisAlignment.start,
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              mainAxisSize: pw.MainAxisSize.min,
+              children: [
+                // Header with logo if available
+                logoImage != null
+                    ? pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.center,
+                        children: [
+                          pw.Container(
+                            width: 40,
+                            height: 40,
+                            child: logoImage,
+                          ),
+                          pw.SizedBox(width: 10),
+                          pw.Text(
+                            "$companyName",
+                            style: pw.TextStyle(
+                              font: fontBold,
+                              fontSize: 18,
+                              color: PdfColors.black,
+                            ),
+                          ),
+                        ],
+                      )
+                    : pw.Text(
+                        "$companyName",
+                        style: pw.TextStyle(
+                          font: fontBold,
+                          fontSize: 16,
+                          color: PdfColors.black,
+                        ),
+                      ),
+                pw.SizedBox(height: 3),
+                pw.Text(
+                  "Payment Receipt",
+                  style: pw.TextStyle(
+                    font: fontBold,
+                    fontSize: 13,
+                    color: PdfColors.black,
+                  ),
+                ),
+
+                pw.SizedBox(height: 3),
+                pw.Divider(thickness: 0.5),
+                pw.SizedBox(height: 3),
+
+                // Vehicle Info Section
+                pw.Container(
+                  width: double.infinity,
+                  padding: const pw.EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.grey100,
+                    borderRadius:
+                        const pw.BorderRadius.all(pw.Radius.circular(5)),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      _buildInfoRowExit("Token No", tokenNo, font, fontBold),
+                      _buildInfoRowExit(
+                          "Vehicle Number", vehicleNumber, font, fontBold),
+                      _buildInfoRowExit(
+                          "Vehicle Type", vehicleType, font, fontBold),
+                      _buildInfoRowExit("Location", location, font, fontBold),
+                    ],
+                  ),
+                ),
+
+                pw.SizedBox(height: 8),
+
+                // Time Info Section
+                pw.Container(
+                  width: double.infinity,
+                  padding: const pw.EdgeInsets.all(10),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.grey100,
+                    borderRadius:
+                        const pw.BorderRadius.all(pw.Radius.circular(5)),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Row(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Expanded(
+                            child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text(
+                                  "Entry",
+                                  style: pw.TextStyle(
+                                    font: fontBold,
+                                    fontSize: 10,
+                                    color: PdfColors.grey700,
+                                  ),
+                                ),
+                                pw.SizedBox(height: 3),
+                                pw.Text(
+                                  entryDateFormatted,
+                                  style: pw.TextStyle(
+                                    font: font,
+                                    fontSize: 9,
+                                    color: PdfColors.black,
+                                  ),
+                                ),
+                                pw.Text(
+                                  entryTimeFormatted,
+                                  style: pw.TextStyle(
+                                    font: fontBold,
+                                    fontSize: 10,
+                                    color: PdfColors.black,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          pw.Container(
+                            height: 35,
+                            width: 1,
+                            color: PdfColors.grey300,
+                          ),
+                          pw.Expanded(
+                            child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.center,
+                              children: [
+                                pw.Text(
+                                  "Duration",
+                                  style: pw.TextStyle(
+                                    font: fontBold,
+                                    fontSize: 10,
+                                    color: PdfColors.grey700,
+                                  ),
+                                ),
+                                pw.SizedBox(height: 3),
+                                pw.Text(
+                                  durationText,
+                                  style: pw.TextStyle(
+                                    font: fontBold,
+                                    fontSize: 10,
+                                    color: PdfColors.black,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          pw.Container(
+                            height: 35,
+                            width: 1,
+                            color: PdfColors.grey300,
+                          ),
+                          pw.Expanded(
+                            child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.end,
+                              children: [
+                                pw.Text(
+                                  "Exit",
+                                  style: pw.TextStyle(
+                                    font: fontBold,
+                                    fontSize: 10,
+                                    color: PdfColors.grey700,
+                                  ),
+                                ),
+                                pw.SizedBox(height: 3),
+                                pw.Text(
+                                  exitDateFormatted,
+                                  style: pw.TextStyle(
+                                    font: font,
+                                    fontSize: 9,
+                                    color: PdfColors.black,
+                                  ),
+                                ),
+                                pw.Text(
+                                  exitTimeFormatted,
+                                  style: pw.TextStyle(
+                                    font: fontBold,
+                                    fontSize: 10,
+                                    color: PdfColors.black,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                pw.SizedBox(height: 8),
+
+                // Payment Section
+                pw.Container(
+                  width: double.infinity,
+                  padding: const pw.EdgeInsets.all(8),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.blue50,
+                    borderRadius:
+                        const pw.BorderRadius.all(pw.Radius.circular(5)),
+                    border: pw.Border.all(color: PdfColors.blue200, width: 0.5),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Text(
+                            "Payment Details",
+                            style: pw.TextStyle(
+                              font: fontBold,
+                              fontSize: 10,
+                              color: PdfColors.black,
+                            ),
+                          ),
+                          pw.Text(
+                            "Receipt #$receiptId",
+                            style: pw.TextStyle(
+                              font: font,
+                              fontSize: 8,
+                              color: PdfColors.grey700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      pw.SizedBox(height: 3),
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Text(
+                            "Amount Paid:",
+                            style: pw.TextStyle(
+                              font: font,
+                              fontSize: 10,
+                              color: PdfColors.black,
+                            ),
+                          ),
+                          pw.Text(
+                            "Rs $amount",
+                            style: pw.TextStyle(
+                              font: fontBold,
+                              fontSize: 10,
+                              color: PdfColors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                      pw.SizedBox(height: 3),
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Text(
+                            "Payment Method:",
+                            style: pw.TextStyle(
+                              font: font,
+                              fontSize: 10,
+                              color: PdfColors.black,
+                            ),
+                          ),
+                          pw.Text(
+                            paymentType,
+                            style: pw.TextStyle(
+                              font: fontBold,
+                              fontSize: 10,
+                              color: PdfColors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                      pw.SizedBox(height: 3),
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Text(
+                            "Date & Time:",
+                            style: pw.TextStyle(
+                              font: font,
+                              fontSize: 8,
+                              color: PdfColors.grey700,
+                            ),
+                          ),
+                          pw.Text(
+                            receiptDate,
+                            style: pw.TextStyle(
+                              font: font,
+                              fontSize: 8,
+                              color: PdfColors.grey700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 5),
+                // Vehicle image and footer
+                //  pw.Spacer(),
+                // Replace the bottom section (the Center with Row) with this code:
+                pw.Column(children: [
+                  pw.Text(
+                    "Drive Safely!",
+                    style: pw.TextStyle(
+                      font: fontBold,
+                      fontSize: 10,
+                      color: PdfColors.black,
+                    ),
+                  ),
+                  pw.SizedBox(height: 5),
+                  pw.Container(
+                    padding: const pw.EdgeInsets.all(5),
+                    decoration: pw.BoxDecoration(
+                      border:
+                          pw.Border.all(color: PdfColors.grey300, width: 0.5),
+                      borderRadius:
+                          const pw.BorderRadius.all(pw.Radius.circular(5)),
+                    ),
+                    child: pw.Text(
+                      "Thank you for choosing our service",
+                      style: pw.TextStyle(
+                        font: fontBold,
+                        fontSize: 8,
+                        color: PdfColors.black,
+                      ),
+                    ),
+                  ),
+                ]),
+                // pw.Align(
+                //   alignment: pw.Alignment.bottomCenter,
+                //   child: pw.Container(
+                //     padding: const pw.EdgeInsets.all(3), // Reduced padding
+                //     child: pw.Row(
+                //       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                //       crossAxisAlignment: pw.CrossAxisAlignment
+                //           .center, // Align items vertically center
+                //       children: [
+                //         pw.Text(
+                //           "Drive Safely!",
+                //           style: pw.TextStyle(
+                //             font: fontBold,
+                //             fontSize: 12,
+                //             color: PdfColors.black,
+                //           ),
+                //         ),
+                //         pw.Container(
+                //           padding: const pw.EdgeInsets.all(5),
+                //           decoration: pw.BoxDecoration(
+                //             border: pw.Border.all(
+                //                 color: PdfColors.grey300, width: 0.5),
+                //             borderRadius: const pw.BorderRadius.all(
+                //                 pw.Radius.circular(5)),
+                //           ),
+                //           child: pw.Text(
+                //             "Thank you for choosing our service",
+                //             style: pw.TextStyle(
+                //               font: fontBold,
+                //               fontSize: 8,
+                //               color: PdfColors.black,
+                //             ),
+                //           ),
+                //         ),
+                //         pw.Container(
+                //           alignment: pw.Alignment.centerRight,
+                //           child: pw.Image(
+                //             img,
+                //             width: 60,
+                //             height: 40,
+                //             fit: pw
+                //                 .BoxFit.contain, // Ensure proper image fitting
+                //           ),
+                //         ),
+                //       ],
+                //     ),
+                //   ),
+                // ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+
+    // Print or save PDF
+    await Printing.layoutPdf(
+      onLayout: (format) async => pdf.save(),
+      name:
+          "Parking_Exit_Receipt_$tokenNo.pdf", // Sets the filename for download/print
+    );
+  }
+
+// Helper function to load logo asset
+  Future<ByteData?> _loadLogoAsset() async {
+    try {
+      return await rootBundle.load('assets/images/logo.png');
+    } catch (e) {
+      debugPrint('Logo not found: $e');
+      return null;
+    }
+  }
+
+// Helper function to build info rows
+  pw.Widget _buildInfoRowExit(
+      String label, String value, pw.Font font, pw.Font fontBold) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 2),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text(
+            label + ":",
+            style: pw.TextStyle(
+              font: font,
+              fontSize: 10,
+              color: PdfColors.grey700,
+            ),
+          ),
+          pw.Text(
+            value,
+            style: pw.TextStyle(
+              font: fontBold,
+              fontSize: 10,
+              color: PdfColors.black,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

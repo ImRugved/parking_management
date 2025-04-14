@@ -23,7 +23,6 @@ class HomeScreen extends GetView<HomeController> {
         init: HomeController(),
         id: "homeScreen",
         builder: (_) {
-          log("selected vehicle is ${_.selectedVehicle.value}");
           return Scaffold(
             appBar: PreferredSize(
               preferredSize: Size(Get.width, 65.h),
